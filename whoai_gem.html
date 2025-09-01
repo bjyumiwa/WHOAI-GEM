@@ -22,10 +22,10 @@
   </style>
 </head>
 <body>
-  <!-- 背景（暫定的に sunset.jpg を3シーン共通で使用） -->
-  <div id="bg-sunrise" class="bg" style="background-image:url('sunset.jpg')"></div>
-  <div id="bg-beach" class="bg hide" style="background-image:url('sunset.jpg')"></div>
-  <div id="bg-night" class="bg hide" style="background-image:url('sunset.jpg')"></div>
+  <!-- 背景 -->
+  <div id="bg-sunrise" class="bg" style="background-image:url('public/bg/sunrise.jpg')"></div>
+  <div id="bg-beach"   class="bg hide" style="background-image:url('public/bg/beach_day.jpg')"></div>
+  <div id="bg-night"   class="bg hide" style="background-image:url('public/bg/night_beach.jpg')"></div>
 
   <!-- WHOAIキャラ -->
   <img id="whoai" class="whoai hop" src="assets/stage1/green_open.png" alt="whoai">
@@ -79,7 +79,7 @@
     const toast=document.getElementById("toast");
     function showToast(key){toast.textContent=t(key);}
 
-    // WHOAIキャラ（assets/stage1/）
+    // WHOAIキャラ
     const WHOAI_DIR="assets/stage1/";
     const WHOAI_LIST=[
       "blue_closed.png","green_open.png","orange_closed.png",
@@ -87,12 +87,12 @@
       "tane_green.png","tane_pink.png","tane_purple.png","tane_blue.png"
     ].map(n=>WHOAI_DIR+n);
 
-    // 貝（items/）
-    const COMMON=["items/asari1.png","items/asari2.png","items/asari3.png"];
+    // 貝
+    const COMMON=["public/items/asari1.png","public/items/asari2.png","public/items/asari3.png"];
     const RARE=[
-      "items/aurora_shell.png","items/flame_shell.png","items/luminous_shell.png",
-      "items/mystic_shell.png","items/night_sky_shell.png",
-      "items/rare_pearl.png","items/rare_rainbow.png","items/wave_shell.png"
+      "public/items/aurora_shell.png","public/items/flame_shell.png","public/items/luminous_shell.png",
+      "public/items/mystic_shell.png","public/items/night_sky_shell.png",
+      "public/items/rare_pearl.png","public/items/rare_rainbow.png","public/items/wave_shell.png"
     ];
 
     // 状態
