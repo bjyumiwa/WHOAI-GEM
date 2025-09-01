@@ -8,27 +8,59 @@
     body,html{margin:0;padding:0;overflow:hidden;height:100%;font-family:sans-serif;background:#000;color:#fff}
     .bg{position:absolute;top:0;left:0;width:100%;height:100%;background-size:cover;background-position:center;transition:opacity 1s}
     .hide{opacity:0;pointer-events:none}
-    .whoai{position:absolute;bottom:80px;left:40px;width:120px;animation:hop 2s infinite}
+
+    .whoai{
+      position:absolute;
+      bottom:12vh;
+      left:5vw;
+      width:clamp(80px,12vw,140px);
+      animation:hop 2s infinite;
+    }
     @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
-    .bucket{position:absolute;bottom:60px;right:40px;width:100px}
+
+    .bucket{
+      position:absolute;
+      right:2vw;
+      bottom:8vh;
+      width:clamp(72px, 14vw, 160px);
+    }
+    .bucket img{display:block;width:100%;height:auto}
+
     .ui{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
     .ui button{padding:6px 10px;border-radius:12px;border:none;cursor:pointer}
-    #toast{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:6px}
-    #counter{position:absolute;bottom:160px;right:50px;font-size:20px}
+
+    #toast{
+      position:absolute;top:10px;left:10px;
+      background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:6px
+    }
+
+    #counter{
+      position:absolute;
+      right:calc(2vw + 6px);
+      bottom:calc(8vh + 12px);
+      font-size:clamp(14px, 1.8vw, 20px);
+      background:#fff;color:#111;
+      padding:4px 8px;border-radius:999px;
+    }
+
     #langSel{position:absolute;top:10px;right:10px}
-    .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center}
+
+    .modal{
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center
+    }
     .modal-content{background:#fff;color:#000;padding:20px;border-radius:12px;max-width:400px;text-align:center}
     .close{margin-top:10px;padding:6px 12px}
   </style>
 </head>
 <body>
   <!-- 背景 -->
-  <div id="bg-sunrise" class="bg" style="background-image:url('public/bg/sunrise.jpg')"></div>
-  <div id="bg-beach"   class="bg hide" style="background-image:url('public/bg/beach_day.jpg')"></div>
-  <div id="bg-night"   class="bg hide" style="background-image:url('public/bg/night_beach.jpg')"></div>
+  <div id="bg-sunrise" class="bg" style="background-image:url('public/items/sunrise.jpg')"></div>
+  <div id="bg-beach"   class="bg hide" style="background-image:url('public/items/beach_day.jpg')"></div>
+  <div id="bg-night"   class="bg hide" style="background-image:url('public/items/night_beach.jpg')"></div>
 
   <!-- WHOAIキャラ -->
-  <img id="whoai" class="whoai hop" src="assets/stage1/green_open.png" alt="whoai">
+  <img id="whoai" class="whoai" src="assets/stage1/green_open.png" alt="whoai">
 
   <!-- バケツ -->
   <div class="bucket"><img src="public/bucket.png" alt="bucket"></div>
@@ -82,13 +114,15 @@
     // WHOAIキャラ
     const WHOAI_DIR="assets/stage1/";
     const WHOAI_LIST=[
-      "blue_closed.png","green_open.png","orange_closed.png",
-      "pink_closed.png","purple_closed.png",
-      "tane_green.png","tane_pink.png","tane_purple.png","tane_blue.png"
+      "public/asset/steag1/blue_closed.png","public/asset/steag1/green_open.png","orange_closed.png",
+      "public/asset/steag1/pink_closed.png","public/asset/steag1/purple_closed.png",
+      "public/asset/steag1/tane_green.png","public/asset/steag1/tane_pink.png","public/asset/steag1/tane_purple.png","public/asset/steag1/tane_blue.png"
     ].map(n=>WHOAI_DIR+n);
 
     // 貝
-    const COMMON=["public/items/asari1.png","public/items/asari2.png","public/items/asari3.png"];
+    const COMMON=[
+      "public/items/asari1.png","public/items/asari2.png","public/items/asari3.png"
+    ];
     const RARE=[
       "public/items/aurora_shell.png","public/items/flame_shell.png","public/items/luminous_shell.png",
       "public/items/mystic_shell.png","public/items/night_sky_shell.png",
@@ -113,9 +147,11 @@
     }
     function closeModal(){document.getElementById("modal").style.display="none";}
 
-    // 初期化
-    setLang("ja");
-    showToast("toast.sunrise");
+    // 初期化（言語ロード後にトーストを表示）
+    (async () => {
+      await setLang("ja");
+      showToast("toast.sunrise");
+    })();
   </script>
 </body>
 </html>
