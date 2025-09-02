@@ -6,18 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body,html{margin:0;padding:0;overflow:hidden;height:100%;font-family:sans-serif;background:#000;color:#fff}
-    .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:1;transition:opacity .8s ease}
-    .bg.hide{opacity:0;pointer-events:none}
+    .bg{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity 1s}
+    .hide{opacity:0;pointer-events:none}
 
-    /* 夜だけ出す月（背景上にうっすら）*/
-    .moon{position:absolute;top:8vh;left:50%;transform:translateX(-50%);
-      width:min(14vw,180px);height:min(14vw,180px);border-radius:50%;
-      background:radial-gradient(circle at 35% 35%, rgba(255,255,255,.95), rgba(255,255,255,.7) 45%, rgba(255,255,255,.0) 60%);
-      filter:blur(.2px) drop-shadow(0 0 10px rgba(255,255,255,.2));
-      opacity:0;transition:opacity .8s ease;pointer-events:none}
-    .night-on .moon{opacity:.9}
-
-    .whoai{position:absolute;bottom:12vh;left:5vw;width:clamp(80px,12vw,140px);animation:hop 2s infinite}
+    .whoai{
+      position:absolute;bottom:12vh;left:5vw;
+      width:clamp(80px,12vw,140px);animation:hop 2s infinite;
+    }
     @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
 
     .bucket{position:absolute;right:2vw;bottom:8vh;width:clamp(72px,14vw,160px)}
@@ -26,46 +21,49 @@
     .ui{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
     .ui button{padding:6px 10px;border-radius:12px;border:none;cursor:pointer}
 
-    #toast{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:6px}
+    #toast{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:6px}
     #counter{position:absolute;right:calc(2vw + 6px);bottom:calc(8vh + 12px);
       font-size:clamp(14px,1.8vw,20px);background:#fff;color:#111;padding:4px 8px;border-radius:999px}
 
     #langSel{position:absolute;top:10px;right:10px}
 
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center}
     .modal-content{background:#fff;color:#000;padding:20px;border-radius:12px;max-width:400px;text-align:center}
     .close{margin-top:10px;padding:6px 12px}
+
+    /* 砂レイヤーと貝 */
+    #sandLayer{position:absolute;inset:0;touch-action:none}
+    .shell{position:absolute;width:clamp(48px,6vw,72px);height:auto;
+      transform:translate(-50%,-50%) scale(0.6);
+      transition:transform .25s ease,opacity .25s ease;
+      opacity:0;cursor:grab;z-index:5}
+    .shell.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+    .dragging{opacity:0.8;cursor:grabbing}
   </style>
 </head>
 <body>
   <!-- 背景 -->
-  <div id="bg-sunrise" class="bg" style="background-image:url('public/bg/sunrise.jpg')"></div>
-  <div id="bg-beach"   class="bg hide" style="background-image:url('public/bg/beach_day.jpg')"></div>
-  <div id="bg-night"   class="bg hide" style="background-image:url('public/bg/night_beach.jpg')"></div>
-  <div id="moon" class="moon"></div>
+  <div id="bg-sunrise" class="bg" style="background-image:url('public/sunset.jpg')"></div>
+  <div id="bg-beach" class="bg hide" style="background-image:url('public/bg/beach_day.jpg')"></div>
+  <div id="bg-night" class="bg hide" style="background-image:url('public/bg/night_beach.jpg')"></div>
 
   <!-- WHOAIキャラ -->
   <img id="whoai" class="whoai" src="public/assets/stage1/green_open.png" alt="whoai">
 
   <!-- バケツ -->
-  <div class="bucket"><img src="public/bucket.png.png" alt="bucket"></div>
+  <div class="bucket" id="bucket"><img src="public/bucket.png.png" alt="bucket"></div>
+  <div id="counter">0</div>
 
   <!-- UI -->
   <div id="toast"></div>
-  <div id="counter">0</div>
   <div class="ui">
     <button id="btnStart" data-i18n="btn.start">はじめる</button>
-    <button id="btnCook"  data-i18n="btn.cook">料理</button>
-    <button id="btnAcc"   data-i18n="btn.acc">アクセサリー</button>
-    <button id="btnCol"   data-i18n="btn.col">コレクション</button>
+    <button id="btnCook" data-i18n="btn.cook">料理</button>
+    <button id="btnAcc" data-i18n="btn.acc">アクセサリー</button>
+    <button id="btnCol" data-i18n="btn.col">コレクション</button>
     <button id="btnNight" data-i18n="btn.night">夜へ</button>
   </div>
-  <select id="langSel" aria-label="language">
-    <option value="ja">日本語</option>
-    <option value="en">English</option>
-    <option value="ko">한국어</option>
-    <option value="zh">中文</option>
-  </select>
+  <select id="langSel"><option value="ja">日本語</option><option value="en">English</option><option value="ko">한국어</option><option value="zh">中文</option></select>
 
   <!-- モーダル -->
   <div id="modal" class="modal">
@@ -75,76 +73,122 @@
     </div>
   </div>
 
-  <script>
-    /* i18n */
-    const I18N = {dict:{},cur:'ja'};
-    async function setLang(lang){
-      I18N.cur = (lang||navigator.language||'ja').slice(0,2);
-      if(!['ja','en','ko','zh'].includes(I18N.cur)) I18N.cur='ja';
-      const res = await fetch(`i18n/${I18N.cur}.json`);
-      I18N.dict = await res.json();
-      applyI18n();
-    }
-    function t(key){return I18N.dict[key]||key;}
-    function applyI18n(){
-      document.querySelectorAll('[data-i18n]').forEach(el=>{
-        el.textContent = t(el.getAttribute('data-i18n'));
-      });
-      document.getElementById('toast').textContent = t('toast.sunrise');
-    }
+  <!-- 砂レイヤー -->
+  <canvas id="sandLayer" class="hide"></canvas>
 
-    const bg={sunrise:document.getElementById('bg-sunrise'),
-              beach:  document.getElementById('bg-beach'),
-              night:  document.getElementById('bg-night')};
-    const stage = document.body;
+<script>
+/* ===== i18n ===== */
+const I18N={dict:{},cur:'ja'};
+async function setLang(lang){
+  I18N.cur=(lang||navigator.language||'ja').slice(0,2);
+  if(!['ja','en','ko','zh'].includes(I18N.cur)) I18N.cur='ja';
+  const res=await fetch(`i18n/${I18N.cur}.json`);
+  I18N.dict=await res.json(); applyI18n();
+}
+function t(key){return I18N.dict[key]||key;}
+function applyI18n(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});}
 
-    function setScene(name){
-      for(const k in bg) bg[k].classList.add('hide');
-      if(name==='sunrise'){ bg.sunrise.classList.remove('hide'); stage.classList.remove('night-on'); toast(t('toast.sunrise')); }
-      if(name==='beach'){   bg.beach.classList.remove('hide');   stage.classList.remove('night-on'); toast(t('toast.beach')); }
-      if(name==='night'){   bg.night.classList.remove('hide');   stage.classList.add('night-on');    toast(t('toast.night')); }
-    }
+/* ===== UI ===== */
+const toast=document.getElementById("toast");
+function showToast(key){toast.textContent=t(key);}
+function openModal(titleKey,bodyKey,arg){
+  document.getElementById("modalText").innerHTML=
+    `<h3>${t(titleKey)}</h3><p>${t(bodyKey)}</p>`;
+  document.getElementById("modal").style.display="flex";
+}
+function closeModal(){document.getElementById("modal").style.display="none";}
 
-    /* UI */
-    const toastEl=document.getElementById('toast');
-    const counterEl=document.getElementById('counter');
-    function toast(s){ toastEl.textContent = s; }
+/* ===== WHOAIキャラと貝 ===== */
+const WHOAI_DIR="public/assets/stage1/";
+const WHOAI_LIST=[
+  "blue_closed.png","green_open.png","orange_closed.png",
+  "pink_closed.png","purple_closed.png","tane_green.png",
+  "tane_pink.png","tane_purple.png","tane_blue.png"
+].map(n=>WHOAI_DIR+n);
 
-    /* データ（今は未使用のまま） */
-    const COMMON=[
-      "public/items/asari1.png","public/items/asari2.png","public/items/asari3.png"
-    ];
-    const RARE=[
-      "public/items/aurora_shell.png","public/items/flame_shell.png","public/items/luminous_shell.png",
-      "public/items/mystic_shell.png","public/items/night_sky_shell.png",
-      "public/items/rare_pearl.png","public/items/rare_rainbow.png","public/items/wave_shell.png"
-    ];
+const COMMON=["public/items/asari1.png","public/items/asari2.png","public/items/asari3.png"];
+const RARE=["public/items/aurora_shell.png","public/items/flame_shell.png","public/items/luminous_shell.png","public/items/mystic_shell.png","public/items/night_sky_shell.png","public/items/rare_pearl.png","public/items/rare_rainbow.png","public/items/wave_shell.png"];
 
-    let count=0;
+/* ===== 状態 ===== */
+let count=0;
 
-    /* ボタン */
-    document.getElementById('btnStart').onclick=()=> setScene('beach');
-    document.getElementById('btnNight').onclick=()=> setScene('night');
+/* ===== 背景管理 ===== */
+const bg={sunrise:document.getElementById("bg-sunrise"),beach:document.getElementById("bg-beach"),night:document.getElementById("bg-night")};
+function setScene(name){
+  for(const k in bg) bg[k].classList.add('hide');
+  if(name==='sunrise'){bg.sunrise.classList.remove('hide');showSandLayer(false);toast.textContent=t('toast.sunrise');}
+  if(name==='beach'){bg.beach.classList.remove('hide');showSandLayer(true);toast.textContent=t('toast.beach');}
+  if(name==='night'){bg.night.classList.remove('hide');showSandLayer(false);toast.textContent=t('toast.night');}
+}
 
-    document.getElementById('btnCook').onclick = ()=>openModal('modal.cook.title','cook.result','miso');
-    document.getElementById('btnAcc').onclick  = ()=>openModal('modal.acc.title','acc.summary','grade.necklace');
-    document.getElementById('btnCol').onclick  = ()=>openModal('modal.col.title','col.title2','');
+/* ===== 砂よけと貝出現 ===== */
+const sandCanvas=document.getElementById('sandLayer');
+const sctx=sandCanvas.getContext('2d',{willReadFrequently:true});
+const SAND={brush:26,spawnProb:0.22,maxShells:6};
+let isBrushing=false,shellsOnField=[];
 
-    document.getElementById('langSel').onchange=e=> setLang(e.target.value);
+function resizeSand(){
+  sandCanvas.width=window.innerWidth;sandCanvas.height=window.innerHeight;
+  const grad=sctx.createLinearGradient(0,0,0,sandCanvas.height);
+  grad.addColorStop(0,'#D9C8A6');grad.addColorStop(1,'#CBB890');
+  sctx.fillStyle=grad;sctx.fillRect(0,0,sandCanvas.width,sandCanvas.height);
+}
+function showSandLayer(on){
+  sandCanvas.classList.toggle('hide',!on);
+  if(on){resizeSand();window.addEventListener('resize',resizeSand);}
+  else{window.removeEventListener('resize',resizeSand);shellsOnField.forEach(s=>s.el.remove());shellsOnField=[];}
+}
+sandCanvas.addEventListener('pointerdown',e=>{isBrushing=true;brushAt(e);});
+sandCanvas.addEventListener('pointermove',e=>{if(isBrushing)brushAt(e);});
+sandCanvas.addEventListener('pointerup',()=>isBrushing=false);
 
-    /* モーダル */
-    function openModal(titleKey,bodyKey,arg){
-      document.getElementById('modalText').innerHTML =
-        `<h3>${t(titleKey)}</h3><p>${t(bodyKey).replace('{dish}',t('dish.'+arg)).replace('{count}',count).replace('{grade}',t(arg))}</p>`;
-      document.getElementById('modal').style.display='flex';
-    }
-    function closeModal(){ document.getElementById('modal').style.display='none'; }
+function brushAt(e){
+  const r=sandCanvas.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;
+  sctx.globalCompositeOperation='destination-out';sctx.beginPath();sctx.arc(x,y,SAND.brush,0,Math.PI*2);sctx.fill();sctx.globalCompositeOperation='source-over';
+  maybeSpawnShell(x,y);
+}
+function maybeSpawnShell(x,y){
+  if(shellsOnField.length>=SAND.maxShells) return;
+  if(Math.random()>SAND.spawnProb) return;
+  const pool=Math.random()<0.8?COMMON:RARE;const src=pool[Math.floor(Math.random()*pool.length)];
+  const el=document.createElement('img');el.src=src;el.className='shell';el.style.left=x+'px';el.style.top=y+'px';
+  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('show'));
+  enableDrag(el);shellsOnField.push({x,y,el});
+}
 
-    /* 初期化 */
-    (async()=>{
-      await setLang('ja');
-      setScene('sunrise');
-    })();
-  </script>
+/* ===== ドラッグでバケツ吸い込み ===== */
+const bucket=document.getElementById('bucket');
+function enableDrag(el){
+  let offsetX,offsetY;
+  el.onpointerdown=e=>{
+    el.classList.add('dragging');
+    offsetX=e.offsetX;offsetY=e.offsetY;
+    el.setPointerCapture(e.pointerId);
+    el.onpointermove=ev=>{
+      el.style.left=(ev.clientX-offsetX)+'px';
+      el.style.top=(ev.clientY-offsetY)+'px';
+    };
+    el.onpointerup=ev=>{
+      el.classList.remove('dragging');el.onpointermove=null;
+      const brect=bucket.getBoundingClientRect();
+      const srect=el.getBoundingClientRect();
+      if(!(srect.right<brect.left||srect.left>brect.right||srect.bottom<brect.top||srect.top>brect.bottom)){
+        el.remove();count++;document.getElementById("counter").textContent=count;
+      }
+    };
+  };
+}
+
+/* ===== ボタン ===== */
+document.getElementById("btnStart").onclick=()=>setScene("sunrise");
+document.getElementById("btnCook").onclick=()=>openModal("modal.cook.title","cook.result","");
+document.getElementById("btnAcc").onclick=()=>openModal("modal.acc.title","acc.summary","");
+document.getElementById("btnCol").onclick=()=>openModal("modal.col.title","col.summary","");
+document.getElementById("btnNight").onclick=()=>setScene("night");
+document.getElementById("langSel").onchange=e=>setLang(e.target.value);
+
+/* ===== init ===== */
+(async()=>{await setLang("ja");setScene("sunrise");})();
+</script>
 </body>
 </html>
