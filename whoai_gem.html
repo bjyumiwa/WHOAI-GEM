@@ -6,49 +6,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body,html{margin:0;padding:0;overflow:hidden;height:100%;font-family:sans-serif;background:#000;color:#fff}
-    .bg{position:absolute;top:0;left:0;width:100%;height:100%;background-size:cover;background-position:center;transition:opacity 1s}
-    .hide{opacity:0;pointer-events:none}
+    .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:1;transition:opacity .8s ease}
+    .bg.hide{opacity:0;pointer-events:none}
 
-    .whoai{
-      position:absolute;
-      bottom:12vh;
-      left:5vw;
-      width:clamp(80px,12vw,140px);
-      animation:hop 2s infinite;
-    }
+    /* 夜だけ出す月（背景上にうっすら）*/
+    .moon{position:absolute;top:8vh;left:50%;transform:translateX(-50%);
+      width:min(14vw,180px);height:min(14vw,180px);border-radius:50%;
+      background:radial-gradient(circle at 35% 35%, rgba(255,255,255,.95), rgba(255,255,255,.7) 45%, rgba(255,255,255,.0) 60%);
+      filter:blur(.2px) drop-shadow(0 0 10px rgba(255,255,255,.2));
+      opacity:0;transition:opacity .8s ease;pointer-events:none}
+    .night-on .moon{opacity:.9}
+
+    .whoai{position:absolute;bottom:12vh;left:5vw;width:clamp(80px,12vw,140px);animation:hop 2s infinite}
     @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
 
-    .bucket{
-      position:absolute;
-      right:2vw;
-      bottom:8vh;
-      width:clamp(72px, 14vw, 160px);
-    }
+    .bucket{position:absolute;right:2vw;bottom:8vh;width:clamp(72px,14vw,160px)}
     .bucket img{display:block;width:100%;height:auto}
 
     .ui{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
     .ui button{padding:6px 10px;border-radius:12px;border:none;cursor:pointer}
 
-    #toast{
-      position:absolute;top:10px;left:10px;
-      background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:6px
-    }
-
-    #counter{
-      position:absolute;
-      right:calc(2vw + 6px);
-      bottom:calc(8vh + 12px);
-      font-size:clamp(14px, 1.8vw, 20px);
-      background:#fff;color:#111;
-      padding:4px 8px;border-radius:999px;
-    }
+    #toast{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:6px}
+    #counter{position:absolute;right:calc(2vw + 6px);bottom:calc(8vh + 12px);
+      font-size:clamp(14px,1.8vw,20px);background:#fff;color:#111;padding:4px 8px;border-radius:999px}
 
     #langSel{position:absolute;top:10px;right:10px}
 
-    .modal{
-      position:fixed;top:0;left:0;width:100%;height:100%;
-      background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center
-    }
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center}
     .modal-content{background:#fff;color:#000;padding:20px;border-radius:12px;max-width:400px;text-align:center}
     .close{margin-top:10px;padding:6px 12px}
   </style>
@@ -58,21 +42,22 @@
   <div id="bg-sunrise" class="bg" style="background-image:url('public/bg/sunrise.jpg')"></div>
   <div id="bg-beach"   class="bg hide" style="background-image:url('public/bg/beach_day.jpg')"></div>
   <div id="bg-night"   class="bg hide" style="background-image:url('public/bg/night_beach.jpg')"></div>
+  <div id="moon" class="moon"></div>
 
   <!-- WHOAIキャラ -->
-  <img id="whoai" class="whoai" src="public/assets/stage1/green_open.png" alt="whoai">
+  <img id="whoai" class="whoai" src="assets/stage1/green_open.png" alt="whoai">
 
   <!-- バケツ -->
-  <div class="bucket"><img src="public/bucket.png.png" alt="bucket"></div>
+  <div class="bucket"><img src="public/bucket.png" alt="bucket"></div>
 
   <!-- UI -->
   <div id="toast"></div>
   <div id="counter">0</div>
   <div class="ui">
     <button id="btnStart" data-i18n="btn.start">はじめる</button>
-    <button id="btnCook" data-i18n="btn.cook">料理</button>
-    <button id="btnAcc" data-i18n="btn.acc">アクセサリー</button>
-    <button id="btnCol" data-i18n="btn.col">コレクション</button>
+    <button id="btnCook"  data-i18n="btn.cook">料理</button>
+    <button id="btnAcc"   data-i18n="btn.acc">アクセサリー</button>
+    <button id="btnCol"   data-i18n="btn.col">コレクション</button>
     <button id="btnNight" data-i18n="btn.night">夜へ</button>
   </div>
   <select id="langSel" aria-label="language">
@@ -91,7 +76,7 @@
   </div>
 
   <script>
-    // i18n 管理
+    /* i18n */
     const I18N = {dict:{},cur:'ja'};
     async function setLang(lang){
       I18N.cur = (lang||navigator.language||'ja').slice(0,2);
@@ -103,23 +88,29 @@
     function t(key){return I18N.dict[key]||key;}
     function applyI18n(){
       document.querySelectorAll('[data-i18n]').forEach(el=>{
-        el.textContent=t(el.getAttribute('data-i18n'));
+        el.textContent = t(el.getAttribute('data-i18n'));
       });
+      document.getElementById('toast').textContent = t('toast.sunrise');
     }
 
-    // UI表示
-    const toast=document.getElementById("toast");
-    function showToast(key){toast.textContent=t(key);}
+    const bg={sunrise:document.getElementById('bg-sunrise'),
+              beach:  document.getElementById('bg-beach'),
+              night:  document.getElementById('bg-night')};
+    const stage = document.body;
 
-    // WHOAIキャラ
-    const WHOAI_DIR="public/assets/stage1/";
-    const WHOAI_LIST=[
-      "blue_closed.png","green_open.png","orange_closed.png",
-      "pink_closed.png","purple_closed.png",
-      "tane_green.png","tane_pink.png","tane_purple.png","tane_blue.png"
-    ].map(n=>WHOAI_DIR+n);
+    function setScene(name){
+      for(const k in bg) bg[k].classList.add('hide');
+      if(name==='sunrise'){ bg.sunrise.classList.remove('hide'); stage.classList.remove('night-on'); toast(t('toast.sunrise')); }
+      if(name==='beach'){   bg.beach.classList.remove('hide');   stage.classList.remove('night-on'); toast(t('toast.beach')); }
+      if(name==='night'){   bg.night.classList.remove('hide');   stage.classList.add('night-on');    toast(t('toast.night')); }
+    }
 
-    // 貝
+    /* UI */
+    const toastEl=document.getElementById('toast');
+    const counterEl=document.getElementById('counter');
+    function toast(s){ toastEl.textContent = s; }
+
+    /* データ（今は未使用のまま） */
     const COMMON=[
       "public/items/asari1.png","public/items/asari2.png","public/items/asari3.png"
     ];
@@ -129,28 +120,30 @@
       "public/items/rare_pearl.png","public/items/rare_rainbow.png","public/items/wave_shell.png"
     ];
 
-    // 状態
     let count=0;
 
-    // ボタン処理
-    document.getElementById("btnStart").onclick=()=>showToast("toast.sunrise");
-    document.getElementById("btnCook").onclick=()=>openModal("modal.cook.title","cook.result","miso");
-    document.getElementById("btnAcc").onclick=()=>openModal("modal.acc.title","acc.summary","grade.necklace");
-    document.getElementById("btnCol").onclick=()=>openModal("modal.col.title","col.title2","");
-    document.getElementById("btnNight").onclick=()=>showToast("toast.night");
-    document.getElementById("langSel").onchange=e=>setLang(e.target.value);
+    /* ボタン */
+    document.getElementById('btnStart').onclick=()=> setScene('beach');
+    document.getElementById('btnNight').onclick=()=> setScene('night');
 
+    document.getElementById('btnCook').onclick = ()=>openModal('modal.cook.title','cook.result','miso');
+    document.getElementById('btnAcc').onclick  = ()=>openModal('modal.acc.title','acc.summary','grade.necklace');
+    document.getElementById('btnCol').onclick  = ()=>openModal('modal.col.title','col.title2','');
+
+    document.getElementById('langSel').onchange=e=> setLang(e.target.value);
+
+    /* モーダル */
     function openModal(titleKey,bodyKey,arg){
-      document.getElementById("modalText").innerHTML=
-        `<h3>${t(titleKey)}</h3><p>${t(bodyKey).replace("{dish}",t("dish."+arg)).replace("{count}",count).replace("{grade}",t(arg))}</p>`;
-      document.getElementById("modal").style.display="flex";
+      document.getElementById('modalText').innerHTML =
+        `<h3>${t(titleKey)}</h3><p>${t(bodyKey).replace('{dish}',t('dish.'+arg)).replace('{count}',count).replace('{grade}',t(arg))}</p>`;
+      document.getElementById('modal').style.display='flex';
     }
-    function closeModal(){document.getElementById("modal").style.display="none";}
+    function closeModal(){ document.getElementById('modal').style.display='none'; }
 
-    // 初期化（言語ロード後にトーストを表示）
-    (async () => {
-      await setLang("ja");
-      showToast("toast.sunrise");
+    /* 初期化 */
+    (async()=>{
+      await setLang('ja');
+      setScene('sunrise');
     })();
   </script>
 </body>
