@@ -2,99 +2,164 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title data-i18n="title">WHOAI Gem</title>
+<title>WHOAI Gem</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   html,body{margin:0;padding:0;height:100%;background:#000;color:#fff;overflow:hidden;font-family:sans-serif}
 
-  /* 背景 */
+  /* 背景（画像 or グラデ） */
   .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .8s;z-index:0}
   .bg.show{opacity:1}
   .grad-sunrise{background:linear-gradient(#ffdfb5,#f7a7b1 40%,#8fb7ff)}
   .grad-beach{background:linear-gradient(#b6e3ff,#9ad0ff 60%,#f2d7a2)}
   .grad-night{background:radial-gradient(circle at 50% 20%,#1b2b52,#0a1430 70%)}
 
-  /* WHOAIキャラ */
-  .whoai{position:absolute;bottom:12vh;left:5vw;width:clamp(80px,12vw,140px);
-         animation:hop 2s infinite;z-index:4}
+  /* WHOAI と バケツ（前面固定） */
+  .whoai{position:absolute;bottom:12vh;left:5vw;width:clamp(80px,12vw,140px);animation:hop 2s infinite;z-index:4}
   @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
 
-  /* バケツ */
   .bucket{position:absolute;right:2vw;bottom:8vh;width:clamp(72px,14vw,160px);z-index:4}
   .bucket img{width:100%;height:auto;display:block}
 
   /* UI */
-  #counter{position:absolute;right:calc(2vw + 6px);bottom:calc(8vh + 12px);
-           font-size:clamp(14px,1.8vw,20px);background:#fff;color:#111;
-           padding:4px 8px;border-radius:999px;z-index:5}
-  #toast{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.6);
-         padding:6px 12px;border-radius:8px;z-index:11}
-  #langSel{position:absolute;top:10px;right:10px;z-index:11}
-  .ui{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
-      display:flex;gap:6px;z-index:10}
+  #counter{position:absolute;right:calc(2vw + 6px);bottom:calc(8vh + 12px);font-size:clamp(14px,1.8vw,20px);
+           background:#fff;color:#111;padding:4px 8px;border-radius:999px;z-index:5}
+  #toast{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:8px;z-index:11}
+  .ui{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10}
   .ui button{padding:6px 12px;border:none;border-radius:8px;cursor:pointer}
 
-  /* 砂レイヤーと貝 */
+  /* 砂と貝（Canvasは背景より前、UIより後） */
   #sandLayer{position:absolute;inset:0;touch-action:none;z-index:2}
-  .shell{position:absolute;width:clamp(48px,6vw,72px);height:auto;
-         transform:translate(-50%,-50%) scale(.6);
-         transition:transform .25s ease,opacity .25s ease;
-         opacity:0;cursor:grab;z-index:3}
+  .shell{position:absolute;width:clamp(48px,6vw,72px);height:auto;transform:translate(-50%,-50%) scale(.6);
+         transition:transform .25s ease,opacity .25s ease;opacity:0;cursor:grab;z-index:3}
   .shell.show{transform:translate(-50%,-50%) scale(1);opacity:1}
   .dragging{opacity:.85;cursor:grabbing}
+
+  /* デバッグ用（画像が無いときのプレースホルダー） */
+  .ph{display:inline-block;background:#222;color:#f66;border:2px solid #f66;padding:6px;border-radius:6px;font-size:12px}
 </style>
 </head>
 <body>
-  <!-- 背景（画像が無くてもグラデで代替） -->
+  <!-- 背景（JSで画像をセット。無ければクラスのグラデが出る） -->
   <div id="bg-sunrise" class="bg grad-sunrise"></div>
   <div id="bg-beach"   class="bg grad-beach"></div>
   <div id="bg-night"   class="bg grad-night"></div>
 
-  <!-- WHOAIキャラ -->
-  <img id="whoai" class="whoai" src="assets/stage1/green_open.png" alt="whoai">
+  <!-- WHOAI（画像フォールバックつきで設定） -->
+  <img id="whoai" class="whoai" alt="whoai">
 
-  <!-- バケツ -->
-  <div class="bucket" id="bucket"><img src="public/bucket.png" alt="bucket"></div>
+  <!-- バケツ（画像フォールバックつきで設定） -->
+  <div class="bucket" id="bucket"><img id="bucketImg" alt="bucket"></div>
   <div id="counter">0</div>
 
-  <!-- UI -->
+  <!-- UI（まずはシンプルに） -->
   <div id="toast"></div>
   <div class="ui">
     <button id="btnStart">はじめる</button>
     <button id="btnNight">夜へ</button>
   </div>
-  <select id="langSel"><option value="ja">日本語</option><option value="en">English</option></select>
 
   <!-- 砂レイヤー -->
   <canvas id="sandLayer" class="hide"></canvas>
 
 <script>
-/* ========== 背景制御 ========== */
+/* ========= ユーティリティ：画像のフォールバック読み込み ========= */
+function setImageWithFallback(imgEl, candidates, labelForDebug){
+  let i=0;
+  function tryNext(){
+    if(i>=candidates.length){
+      // すべて失敗 → プレースホルダー表示
+      imgEl.replaceWith(Object.assign(document.createElement('div'),{
+        className:'ph',
+        textContent:`missing: ${labelForDebug}`
+      }));
+      return;
+    }
+    const src=candidates[i++];
+    imgEl.onerror=tryNext;
+    imgEl.src=src;
+  }
+  tryNext();
+}
+
+/* ========= 背景の存在チェック（無ければグラデのまま） ========= */
+function preload(src){return new Promise(r=>{const im=new Image();im.onload=()=>r(src);im.onerror=()=>r(null);im.src=src+'?v='+Date.now();});}
+const BG_SOURCES={
+  sunrise:'public/bg/sunrise.jpg',
+  beach:'public/bg/beach_day.jpg',
+  night:'public/bg/night_beach.jpg'
+};
 const bgEl={
   sunrise:document.getElementById('bg-sunrise'),
   beach:document.getElementById('bg-beach'),
   night:document.getElementById('bg-night')
 };
-function showOnly(id){Object.values(bgEl).forEach(el=>el.classList.remove('show'));id.classList.add('show');}
+async function setupBackgrounds(){
+  const ok={
+    sunrise:await preload(BG_SOURCES.sunrise),
+    beach:  await preload(BG_SOURCES.beach),
+    night:  await preload(BG_SOURCES.night)
+  };
+  if(ok.sunrise) bgEl.sunrise.style.backgroundImage=`url(${ok.sunrise})`;
+  if(ok.beach)   bgEl.beach.style.backgroundImage  =`url(${ok.beach})`;
+  if(ok.night)   bgEl.night.style.backgroundImage  =`url(${ok.night})`;
+}
+function showOnly(id){Object.values(bgEl).forEach(el=>el.classList.remove('show')); id.classList.add('show');}
 
-/* ========== 状態管理 ========== */
-let count=0;
-const counterEl=document.getElementById('counter');
+/* ========= WHOAI / バケツの画像をフォールバックつきで設定 ========= */
+const whoai = document.getElementById('whoai');
+setImageWithFallback(
+  whoai,
+  [
+    'assets/stage1/green_open.png',
+    'public/assets/stage1/green_open.png',
+    'assets/stage1/green_open.PNG' // 大文字拡張子の保険
+  ],
+  'assets/stage1/green_open.png'
+);
+
+const bucketImg = document.getElementById('bucketImg');
+setImageWithFallback(
+  bucketImg,
+  [
+    'public/bucket.png',
+    'public/props/bucket.png',
+    'public/bucket.png.png'
+  ],
+  'public/bucket.png'
+);
+
+/* ========= UIと状態 ========= */
 const toast=document.getElementById('toast');
+const counterEl=document.getElementById('counter');
+let count=0;
+function toastMsg(s){toast.textContent=s;}
+function setScene(name){
+  // 背景切替
+  if(name==='sunrise'){showOnly(bgEl.sunrise); hideSand(); toastMsg('おはよう。朝日がきれいだね');}
+  if(name==='beach'){  showOnly(bgEl.beach);   showSand(); toastMsg('砂をやさしくなでてみよう');}
+  if(name==='night'){  showOnly(bgEl.night);   hideSand(); toastMsg('今日はここまでにしようか');}
+  // 場にある貝を片づけ
+  shellsOnField.forEach(s=>s.el.remove()); shellsOnField=[];
+}
 
-/* ========== 砂レイヤー（深さマップつき） ========== */
+/* ========= 砂（深さあり）＆ 貝出現 / ドラッグ吸い込み ========= */
 const sandCanvas=document.getElementById('sandLayer');
 const sctx=sandCanvas.getContext('2d',{willReadFrequently:true});
-const TILE_SIZE=80; // 深さ判定の1タイルの大きさ
-let depthMap={},brushCount={},shellsOnField=[];
+let isBrushing=false, shellsOnField=[];
+const TILE_SIZE=80;
+let depthMap={}, brushCount={};
 const SAND={brush:26,spawnProb:0.25,maxShells:10};
 
-function viewportWH(){return {vw:window.innerWidth,vh:window.innerHeight};}
+function viewportWH(){
+  const w = window.visualViewport ? visualViewport.width  : document.documentElement.clientWidth;
+  const h = window.visualViewport ? visualViewport.height : document.documentElement.clientHeight;
+  return {vw:Math.floor(w),vh:Math.floor(h)};
+}
 function resizeSand(){
   const {vw,vh}=viewportWH();
   sandCanvas.width=vw; sandCanvas.height=vh;
-  const g=sctx.createLinearGradient(0,0,0,vh);
-  g.addColorStop(0,'#D9C8A6'); g.addColorStop(1,'#CBB890');
+  const g=sctx.createLinearGradient(0,0,0,vh); g.addColorStop(0,'#D9C8A6'); g.addColorStop(1,'#CBB890');
   sctx.fillStyle=g; sctx.fillRect(0,0,vw,vh);
 }
 function initDepthMap(){
@@ -102,37 +167,52 @@ function initDepthMap(){
   const {vw,vh}=viewportWH();
   const cols=Math.ceil(vw/TILE_SIZE), rows=Math.ceil(vh/TILE_SIZE);
   for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){
-    const rnd=Math.random(); let d=1;
-    if(rnd>0.5) d=2; if(rnd>0.85) d=3;
+    const rnd=Math.random(); let d=1; if(rnd>0.5)d=2; if(rnd>0.85)d=3;
     depthMap[`${c},${r}`]=d; brushCount[`${c},${r}`]=0;
   }
 }
-function showSand(){sandCanvas.classList.remove('hide');resizeSand();initDepthMap();}
-function hideSand(){sandCanvas.classList.add('hide');shellsOnField.forEach(s=>s.el.remove());shellsOnField=[];}
+function showSand(){
+  sandCanvas.classList.remove('hide');
+  resizeSand(); initDepthMap();
+  window.addEventListener('resize',resizeSand);
+  if(window.visualViewport){
+    visualViewport.addEventListener('resize',resizeSand);
+    visualViewport.addEventListener('scroll', resizeSand);
+  }
+}
+function hideSand(){
+  sandCanvas.classList.add('hide');
+  window.removeEventListener('resize',resizeSand);
+  if(window.visualViewport){
+    visualViewport.removeEventListener('resize',resizeSand);
+    visualViewport.removeEventListener('scroll', resizeSand);
+  }
+}
 
-sandCanvas.addEventListener('pointerdown',e=>{isBrushing=true;brushAt(e);},{passive:false});
-sandCanvas.addEventListener('pointermove',e=>{if(isBrushing)brushAt(e);},{passive:false});
-sandCanvas.addEventListener('pointerup',()=>isBrushing=false);
-sandCanvas.addEventListener('pointercancel',()=>isBrushing=false);
+sandCanvas.addEventListener('pointerdown', e=>{e.preventDefault(); isBrushing=true; sandCanvas.setPointerCapture(e.pointerId); brushAt(e);},{passive:false});
+sandCanvas.addEventListener('pointermove', e=>{if(!isBrushing)return; e.preventDefault(); brushAt(e);},{passive:false});
+sandCanvas.addEventListener('pointerup',   e=>{e.preventDefault(); isBrushing=false;},{passive:false});
+sandCanvas.addEventListener('pointercancel',e=>{e.preventDefault(); isBrushing=false;},{passive:false});
 
-let isBrushing=false;
 function brushAt(e){
   const rect=sandCanvas.getBoundingClientRect();
   const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  // “消す”
   sctx.globalCompositeOperation='destination-out';
   sctx.beginPath(); sctx.arc(x,y,SAND.brush,0,Math.PI*2); sctx.fill();
   sctx.globalCompositeOperation='source-over';
+
+  // 深さ判定
   const col=Math.floor(x/TILE_SIZE), row=Math.floor(y/TILE_SIZE), key=`${col},${row}`;
   if(depthMap[key]){
     brushCount[key]++;
-    if(brushCount[key]>=depthMap[key]){
-      depthMap[key]=Infinity; // 二度と判定しない
+    if(brushCount[key] >= depthMap[key]){
+      depthMap[key] = Infinity; // このタイルは一度だけ判定
       maybeSpawnShell(x,y);
     }
   }
 }
 
-/* ========== 貝の出現 & ドラッグ吸い込み ========== */
 const COMMON=["public/items/asari1.png","public/items/asari2.png","public/items/asari3.png"];
 const RARE=["public/items/aurora_shell.png","public/items/flame_shell.png","public/items/luminous_shell.png","public/items/mystic_shell.png","public/items/night_sky_shell.png","public/items/rare_pearl.png","public/items/rare_rainbow.png","public/items/wave_shell.png"];
 const bucket=document.getElementById('bucket');
@@ -140,59 +220,59 @@ const bucket=document.getElementById('bucket');
 function maybeSpawnShell(x,y){
   if(shellsOnField.length>=SAND.maxShells) return;
   if(Math.random()>SAND.spawnProb) return;
-  // 出現位置をランダムに散らばらせる
+
+  // 位置を散らばらせる
   const spread=80;
   const randX=x+(Math.random()*2-1)*spread;
   const randY=y+(Math.random()*2-1)*spread;
-  const vw=window.innerWidth,vh=window.innerHeight;
+  const vw=window.innerWidth, vh=window.innerHeight;
   const cx=Math.max(40,Math.min(vw-40,randX));
   const cy=Math.max(80,Math.min(vh-80,randY));
+
   const pool=Math.random()<0.8?COMMON:RARE;
   const src=pool[Math.floor(Math.random()*pool.length)];
+
   const el=document.createElement('img');
-  el.src=src; el.className='shell'; el.style.left=cx+'px'; el.style.top=cy+'px';
+  el.className='shell'; el.style.left=cx+'px'; el.style.top=cy+'px';
+  // シェル画像もフォールバックつきで読む
+  setImageWithFallback(el, [src, src.replace('public/','')], src);
+
   document.body.appendChild(el);
   requestAnimationFrame(()=>el.classList.add('show'));
-  enableDrag(el); shellsOnField.push({x:cx,y:cy,el});
+  enableDrag(el);
+  shellsOnField.push({x:cx,y:cy,el});
 }
 
 function enableDrag(el){
-  let shiftX=0,shiftY=0;
+  let shiftX=0, shiftY=0;
   el.onpointerdown=e=>{
     e.preventDefault();
     el.classList.add('dragging');
     el.setPointerCapture(e.pointerId);
-    const rect=el.getBoundingClientRect();
-    shiftX=e.clientX-rect.left; shiftY=e.clientY-rect.top;
+    const r=el.getBoundingClientRect();
+    shiftX=e.clientX-r.left; shiftY=e.clientY-r.top;
     el.onpointermove=ev=>{
-      el.style.left=(ev.clientX-shiftX)+"px";
-      el.style.top =(ev.clientY-shiftY)+"px";
+      el.style.left=(ev.clientX-shiftX)+'px';
+      el.style.top =(ev.clientY-shiftY)+'px';
     };
     el.onpointerup=ev=>{
       el.classList.remove('dragging');
       el.onpointermove=null; el.releasePointerCapture(e.pointerId);
       const b=bucket.getBoundingClientRect(), s=el.getBoundingClientRect();
-      const overlap=!(s.right<b.left||s.left>b.right||s.bottom<b.top||s.top>b.bottom);
-      if(overlap){el.remove();count++;counterEl.textContent=count;}
+      const overlap = !(s.right<b.left || s.left>b.right || s.bottom<b.top || s.top>b.bottom);
+      if(overlap){ el.remove(); count++; counterEl.textContent=count; }
     };
   };
 }
 
-/* ========== シーン切替 ========== */
-function setScene(name){
-  Object.values(bgEl).forEach(el=>el.classList.remove('show'));
-  shellsOnField.forEach(s=>s.el.remove()); shellsOnField=[];
-  if(name==='sunrise'){showOnly(bgEl.sunrise);hideSand();toast.textContent="おはよう";}
-  if(name==='beach'){showOnly(bgEl.beach);showSand();toast.textContent="砂をなでてみよう";}
-  if(name==='night'){showOnly(bgEl.night);hideSand();toast.textContent="今日はここまで";}
-}
-
-/* ========== ボタン ========== */
+/* ========= 初期化 ========= */
 document.getElementById('btnStart').onclick=()=>setScene('beach');
 document.getElementById('btnNight').onclick=()=>setScene('night');
 
-/* 初期表示 */
-setScene('sunrise');
+(async()=>{
+  await setupBackgrounds();   // 背景があれば使い、無ければグラデ
+  setScene('sunrise');        // 最初は朝
+})();
 </script>
 </body>
 </html>
