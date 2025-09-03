@@ -1,47 +1,44 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>WHOAI Gem</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <style>
-  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:#fff;
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Sans','Noto Sans JP',sans-serif;
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans JP',sans-serif;
     touch-action:none; overscroll-behavior:none;}
-  .bg{position:fixed;inset:0;background-size:cover;background-position:center;transition:opacity .8s;opacity:0}
+  .bg{position:fixed;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .7s}
   .bg.show{opacity:1}
 
-  /* WHOAI（ドラッグ可） */
-  #whoaiWrap{position:fixed;left:5vw;bottom:12vh;z-index:4;touch-action:none}
-  #whoai{width:clamp(80px,12vw,140px);animation:hop 2s infinite;user-select:none}
-  @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
+  /* WHOAI（ドラッグで砂を削る） */
+  #whoaiWrap{position:fixed;left:5vw;bottom:12vh;z-index:5;touch-action:none}
+  #whoai{width:clamp(82px,12vw,140px);user-select:none;animation:hop 2s infinite}
+  @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);
+          background:#fff;color:#111;border-radius:10px;padding:4px 8px;font-size:14px;
+          box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:.18s}
+  .bubble.show{opacity:1;transform:translate(-50%,-12px)}
 
   /* バケツ */
-  .bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(72px,14vw,160px)}
-  .bucket img{display:block;width:100%;height:auto}
+  #bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(74px,14vw,160px)}
+  #bucket img{width:100%;display:block}
   #counter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    background:#fff;color:#111;border-radius:999px;padding:4px 8px;font-size:clamp(12px,2vw,18px);pointer-events:none}
+           background:#fff;color:#111;border-radius:999px;padding:4px 8px;font-weight:600}
 
-  /* UI & トースト */
-  #toast{position:fixed;top:10px;left:10px;z-index:10;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:8px}
-  .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:6px;z-index:10}
-  .ui button{padding:6px 12px;border:none;border-radius:10px;cursor:pointer}
-
-  /* 砂キャンバス & 貝 */
+  /* 砂キャンバス ＆ 貝 */
   #sand{position:fixed;inset:0;z-index:2;touch-action:none}
-  .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:auto;transform:translate(-50%,-50%);
-         background-size:contain;background-repeat:no-repeat;background-position:center;cursor:grab;touch-action:none;
-         transition:opacity .2s,transform .2s;opacity:0}
+  .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:clamp(48px,6vw,72px);
+         transform:translate(-50%,-50%) scale(.92);
+         background-size:contain;background-repeat:no-repeat;background-position:center;
+         cursor:grab;touch-action:none;opacity:0;transition:opacity .18s, transform .18s}
   .shell.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-  .shell.drag{opacity:.95}
+  .shell.drag{opacity:.95;transform:translate(-50%,-50%) scale(1.03)}
 
-  /* 吹き出し */
-  .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-10px);
-          background:#fff;color:#111;border-radius:12px;padding:4px 8px;font-size:14px;
-          box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:opacity .2s, transform .2s}
-  .bubble::after{content:'';position:absolute;left:50%;top:100%;transform:translateX(-50%);
-                 border:8px solid transparent;border-top-color:#fff}
-  .bubble.show{opacity:1;transform:translate(-50%,-14px)}
+  /* UI */
+  #toast{position:fixed;left:10px;top:10px;z-index:10;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:8px}
+  .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+  .ui button{padding:6px 12px;border:none;border-radius:10px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -50,17 +47,20 @@
   <div id="bg-beach"   class="bg" style="background-image:url('./public/bg/beach_day.jpg')"></div>
   <div id="bg-night"   class="bg" style="background-image:url('./public/bg/night_beach.jpg')"></div>
 
-  <!-- WHOAI（ドラッグで砂をなでる） -->
+  <!-- WHOAI -->
   <div id="whoaiWrap">
     <img id="whoai" src="./assets/stage1/green_open.png" alt="whoai">
     <div id="bubble" class="bubble">やったね！</div>
   </div>
 
-  <!-- バケツ + カウンタ -->
-  <div id="bucket" class="bucket">
-    <img id="bucketImg" src="./public/bucket.png.png" alt="bucket">
+  <!-- バケツ -->
+  <div id="bucket">
+    <img id="bucketImg" src="./public/bucket.png" alt="bucket">
     <div id="counter">0</div>
   </div>
+
+  <!-- 砂 -->
+  <canvas id="sand"></canvas>
 
   <!-- UI -->
   <div id="toast"></div>
@@ -69,35 +69,38 @@
     <button id="btnNight">夜へ</button>
   </div>
 
-  <!-- 砂 -->
-  <canvas id="sand"></canvas>
-
 <script>
-/* ====== 便利関数 ====== */
+/* ====== 環境 ====== */
 const toast = document.getElementById('toast');
-function say(s){ toast.textContent = s; }
+const bubble= document.getElementById('bubble');
+const whoaiWrap = document.getElementById('whoaiWrap');
+const bucket = document.getElementById('bucket');
+const counter= document.getElementById('counter');
 const bg = {
   sunrise: document.getElementById('bg-sunrise'),
   beach  : document.getElementById('bg-beach'),
   night  : document.getElementById('bg-night')
 };
+function say(s){ toast.textContent=s; }
 function scene(name){
   Object.values(bg).forEach(e=>e.classList.remove('show'));
   bg[name].classList.add('show');
+  currentScene=name;
 }
 
-/* ====== 砂キャンバス（深さあり） ====== */
+/* ====== 砂キャンバス ====== */
 const sand = document.getElementById('sand');
 const ctx  = sand.getContext('2d',{willReadFrequently:true});
-const TILE=80;              // 深さマップの1マス
-const BRUSH=26;             // ブラシ半径
-let depth={}, brushed={};   // 各タイルの深さ・擦った回数
+const TILE=90;                // 深さタイル（大きすぎると軽いが演出弱 / 小さいと重い）
+const BRUSH=28;               // ブラシ半径
+let depth={}, brushed={};     // タイルごと 深さ(1..3) と こすり回数
 
 function resizeSand(){
   sand.width = innerWidth;
   sand.height= innerHeight;
-  const g = ctx.createLinearGradient(0,0,0,sand.height);
-  g.addColorStop(0,'#E2D2AE'); g.addColorStop(1,'#C8B68F');
+  // 砂を塗る（上が乾いて明るく、下は濃い）
+  const g=ctx.createLinearGradient(0,0,0,sand.height);
+  g.addColorStop(0,'#E7D9B7'); g.addColorStop(.6,'#D9C79E'); g.addColorStop(1,'#C8B68F');
   ctx.fillStyle=g; ctx.fillRect(0,0,sand.width,sand.height);
 }
 function initDepth(){
@@ -105,48 +108,47 @@ function initDepth(){
   const cols=Math.ceil(sand.width/TILE), rows=Math.ceil(sand.height/TILE);
   for(let c=0;c<cols;c++){
     for(let r=0;r<rows;r++){
-      // 3段階の深さ（たまに固い砂）
+      // 10%は固い(3回)、35%は中(2回)、残りは浅い(1回)
       const p=Math.random();
-      depth[`${c},${r}`]=(p>0.85)?3:(p>0.55)?2:1;
+      depth[`${c},${r}`]=(p<.10)?3:(p<.45)?2:1;
       brushed[`${c},${r}`]=0;
     }
   }
 }
 function brushAt(x,y){
+  // 視覚：砂を削る
   ctx.globalCompositeOperation='destination-out';
   ctx.beginPath(); ctx.arc(x,y,BRUSH,0,Math.PI*2); ctx.fill();
   ctx.globalCompositeOperation='source-over';
-  const col=Math.floor(x/TILE), row=Math.floor(y/TILE), key=`${col},${row}`;
-  if(depth[key]!=null){
-    brushed[key]++;
-    if(brushed[key]>=depth[key]){ depth[key]=Infinity; maybeSpawn(x,y); }
-  }
+
+  // 論理：そのタイルの深さを消費
+  const c=Math.floor(x/TILE), r=Math.floor(y/TILE), key=`${c},${r}`;
+  if(depth[key]===Infinity) return;         // すでに開通済み
+  if(depth[key]==null) return;              // 画面外など
+  const v=++brushed[key];
+  if(v>=depth[key]){ depth[key]=Infinity; maybeSpawnNear(x,y); }
 }
 
-/* ====== WHOAI をドラッグ → 砂をなでる ====== */
-const whoaiWrap=document.getElementById('whoaiWrap');
-const whoai    =document.getElementById('whoai');
-const bubble   =document.getElementById('bubble');
+/* ====== WHOAI ドラッグ → その地点で brushAt ====== */
+let currentScene='sunrise';
 let wpid=null;
-function showBubble(text){
-  bubble.textContent=text; bubble.classList.add('show');
-  setTimeout(()=>bubble.classList.remove('show'),1000);
-}
-whoaiWrap.addEventListener('pointerdown', e=>{
+whoaiWrap.addEventListener('pointerdown',e=>{
   e.preventDefault(); wpid=e.pointerId; whoaiWrap.setPointerCapture(wpid);
 });
-whoaiWrap.addEventListener('pointermove', e=>{
+whoaiWrap.addEventListener('pointermove',e=>{
   if(e.pointerId!==wpid) return; e.preventDefault();
+  // 位置更新
   const w=whoaiWrap.offsetWidth, h=whoaiWrap.offsetHeight;
   const x=Math.max(0,Math.min(innerWidth -w, e.clientX - w/2));
   const y=Math.max(0,Math.min(innerHeight-h, e.clientY - h/2));
   whoaiWrap.style.left=x+'px'; whoaiWrap.style.top=y+'px';
+  // 砂を削る
   if(currentScene==='beach') brushAt(e.clientX, e.clientY);
 });
-whoaiWrap.addEventListener('pointerup', ()=>{ wpid=null; whoaiWrap.releasePointerCapture; });
-whoaiWrap.addEventListener('pointercancel', ()=>{ wpid=null; whoaiWrap.releasePointerCapture; });
+whoaiWrap.addEventListener('pointerup',()=>{ wpid=null; });
+whoaiWrap.addEventListener('pointercancel',()=>{ wpid=null; });
 
-/* ====== 貝：間引きスポーン（散らばる・出すぎない） ====== */
+/* ====== 貝の出現（間引き） ====== */
 const COMMON=[
   './public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'
 ];
@@ -155,96 +157,82 @@ const RARE=[
   './public/items/mystic_shell.png','./public/items/night_sky_shell.png',
   './public/items/rare_pearl.png','./public/items/rare_rainbow.png','./public/items/wave_shell.png'
 ];
-
-const shells=[];                // {el,x,y}
-const MAX_SHELLS=9;            // 出現上限
-const MIN_DIST=90;             // 既存貝との最小距離
-const SPAWN_PROB=0.28;         // タイル解放時の出現確率（“ない時もある”）
+const shells=[];                  // {el,x,y}
+const MAX_SHELLS=9;              // 上限
+const MIN_DIST=90;               // 最小距離
+const SPAWN_PROB=.32;            // タイル開通時の出現確率
 
 function tooClose(x,y){
-  return shells.some(s=>{
-    const dx=s.x-x, dy=s.y-y; return Math.hypot(dx,dy)<MIN_DIST;
-  });
+  return shells.some(s=>Math.hypot(s.x-x,s.y-y)<MIN_DIST);
 }
-function maybeSpawn(x,y){
+function avoidBucket(x,y){
+  const b=bucket.getBoundingClientRect();
+  const cx=b.left+b.width/2, cy=b.top+b.height/2;
+  return Math.hypot(cx-x,cy-y)<120; // バケツ近すぎは避ける
+}
+function maybeSpawnNear(x,y){
   if(shells.length>=MAX_SHELLS) return;
-  if(Math.random()>SPAWN_PROB) return; // 出ないときもある
-  // 少し周囲に散らす
-  const j=80; let px=x+(Math.random()*2-1)*j, py=y+(Math.random()*2-1)*j;
-  px=Math.max(40,Math.min(innerWidth -40,px));
-  py=Math.max(80,Math.min(innerHeight-80,py));
-  if(tooClose(px,py)) return; // 間引き
+  if(Math.random()>SPAWN_PROB) return;        // 出ないこともある
+  let px=x+(Math.random()*2-1)*90, py=y+(Math.random()*2-1)*90;
+  px=Math.max(50,Math.min(innerWidth -50,px));
+  py=Math.max(90,Math.min(innerHeight-90,py));
+  if(tooClose(px,py) || avoidBucket(px,py)) return;
 
   const pool=Math.random()<0.8?COMMON:RARE;
-  const src =pool[Math.floor(Math.random()*pool.length)];
+  const src=pool[Math.floor(Math.random()*pool.length)];
   const el=document.createElement('div');
   el.className='shell'; el.style.left=px+'px'; el.style.top=py+'px';
   el.style.backgroundImage=`url(${src})`;
-  document.body.appendChild(el); requestAnimationFrame(()=>el.classList.add('show'));
-  enableDrag(el);
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  enableShellDrag(el);
   shells.push({el,x:px,y:py});
 }
 
-/* ====== ドラッグでバケツに吸い込み ====== */
-const bucket   =document.getElementById('bucket');
-const bucketImg=document.getElementById('bucketImg');
-const counter  =document.getElementById('counter');
+/* ====== 貝ドラッグ → バケツ吸い込み ====== */
 let count=0;
+function showBubble(text){ bubble.textContent=text; bubble.classList.add('show'); setTimeout(()=>bubble.classList.remove('show'),900); }
 
-function enableDrag(el){
-  let pid=null, offX=0, offY=0;
-  el.addEventListener('pointerdown', e=>{
+function enableShellDrag(el){
+  let pid=null, dx=0, dy=0;
+  el.addEventListener('pointerdown',e=>{
     e.preventDefault(); pid=e.pointerId; el.setPointerCapture(pid);
-    offX=e.clientX-parseFloat(el.style.left); offY=e.clientY-parseFloat(el.style.top);
+    dx=e.clientX-parseFloat(el.style.left); dy=e.clientY-parseFloat(el.style.top);
     el.classList.add('drag');
   },{passive:false});
-  el.addEventListener('pointermove', e=>{
+  el.addEventListener('pointermove',e=>{
     if(e.pointerId!==pid) return; e.preventDefault();
-    const nx=e.clientX-offX, ny=e.clientY-offY;
-    el.style.left=nx+'px'; el.style.top=ny+'px';
+    el.style.left=(e.clientX-dx)+'px'; el.style.top=(e.clientY-dy)+'px';
   },{passive:false});
   function end(e){
     if(e.pointerId!==pid) return; e.preventDefault(); el.classList.remove('drag'); el.releasePointerCapture(pid); pid=null;
-    const b=bucket.getBoundingClientRect(), s=el.getBoundingClientRect(), pad=20;
+    const b=bucket.getBoundingClientRect(), s=el.getBoundingClientRect(), pad=18;
     const hit=!(s.right<b.left-pad || s.left>b.right+pad || s.bottom<b.top-pad || s.top>b.bottom+pad);
     if(hit){
       el.remove();
-      const idx=shells.findIndex(o=>o.el===el); if(idx>-1) shells.splice(idx,1);
+      const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1);
       counter.textContent=++count; showBubble('やったね！');
     }
   }
-  el.addEventListener('pointerup', end,{passive:false});
-  el.addEventListener('pointercancel', end,{passive:false});
+  el.addEventListener('pointerup',end,{passive:false});
+  el.addEventListener('pointercancel',end,{passive:false});
 }
 
-/* ====== シーン制御 ====== */
-let currentScene='sunrise';
-function setScene(name){
-  currentScene=name;
-  Object.values(bg).forEach(e=>e.classList.remove('show'));
-  bg[name].classList.add('show');
+/* ====== 砂の直接タッチ（WHOAIを使わず指でもOKに） ====== */
+sand.addEventListener('pointerdown',e=>{ if(currentScene!=='beach')return; e.preventDefault(); brushAt(e.clientX,e.clientY);},{passive:false});
+sand.addEventListener('pointermove',e=>{ if(currentScene!=='beach'||e.pressure===0) return; e.preventDefault(); brushAt(e.clientX,e.clientY);},{passive:false});
 
-  if(name==='sunrise'){ say('おはよう。朝日がきれいだね'); }
-  if(name==='beach'){
-    say('砂をやさしくなでてみよう');
-    resizeSand(); initDepth();
-    sand.classList.remove('hide');
-  }else{
-    sand.classList.add('hide');
-  }
-  if(name==='night'){ say('今日はここまでにしようか'); }
-}
-
-/* ====== 入力：砂（指/マウス） ====== */
-sand.addEventListener('pointerdown', e=>{e.preventDefault(); sand.setPointerCapture(e.pointerId); brushAt(e.clientX,e.clientY);},{passive:false});
-sand.addEventListener('pointermove', e=>{ if(e.pressure===0) return; e.preventDefault(); brushAt(e.clientX,e.clientY);},{passive:false});
-
-/* ====== ボタン ====== */
-document.getElementById('btnStart').onclick=()=>setScene('beach');
-document.getElementById('btnNight').onclick=()=>setScene('night');
+/* ====== ボタン / シーン ====== */
+document.getElementById('btnStart').onclick=()=>{
+  scene('beach'); say('砂をやさしくなでてみよう');
+  resizeSand(); initDepth();
+};
+document.getElementById('btnNight').onclick=()=>{ scene('night'); say('今日はここまでにしようか'); };
 
 /* ====== 初期化 ====== */
-function init(){ resizeSand(); setScene('sunrise'); }
+function init(){
+  resizeSand(); scene('sunrise'); say('おはよう。朝日がきれいだね');
+}
 addEventListener('resize', resizeSand);
 init();
 </script>
