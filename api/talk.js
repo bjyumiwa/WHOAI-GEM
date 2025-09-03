@@ -1,3 +1,74 @@
+// api/talk.js
+// 夜の会話用の薄いラッパ。window.WHOAI_API = { endpoint:'...', key:'...', model:'gpt-4o-mini' } を用意するとAPI送信。
+// 未設定ならローカル応答でフォールバック。
+
+(function (global) {
+  'use strict';
+
+  const DEFAULT_SYSTEM = 'You are a gentle companion under the night sky. Reply briefly and warmly in Japanese.';
+
+  function localFallback(userText, state = {}) {
+    const total = (state.totalCollected ?? 0);
+    const hint = total ? ` きょう集めた宝物は${total}個だね。` : '';
+    return { reply: `（ローカル応答）${userText}。夜風が気持ちいいね。${hint}`, raw: null };
+  }
+
+  async function talk(userText, options = {}) {
+    const cfg = global.WHOAI_API || {};
+    const endpoint = cfg.endpoint;
+    const apiKey   = cfg.key || null;
+    const model    = cfg.model || 'gpt-4o-mini';
+    const temperature = (options.temperature ?? cfg.temperature ?? 0.7);
+
+    const contextMsgs = Array.isArray(options.context) ? options.context : [];
+    const sysMsg = contextMsgs.find(m => m.role === 'system') || { role: 'system', content: DEFAULT_SYSTEM };
+    const messages = [ sysMsg, ...contextMsgs.filter(m => m.role !== 'system'), { role: 'user', content: userText } ];
+
+    if (!endpoint) return localFallback(userText, options.state);
+
+    const payload = { model, messages, temperature };
+
+    let res;
+    try {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.error('[talk] network error:', e);
+      return { reply: '（接続に失敗しました）', raw: null, error: e };
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('[talk] bad response:', res.status, text);
+      return { reply: '（サーバから正常な応答がありません）', raw: text, status: res.status };
+    }
+
+    let json = null;
+    try { json = await res.json(); }
+    catch (e) { return { reply: '（JSONを解釈できませんでした）', raw: null, error: e }; }
+
+    const reply = json.reply ?? json.choices?.[0]?.message?.content ?? json.choices?.[0]?.text ?? '';
+    return { reply: reply || '…', raw: json };
+  }
+
+  function createStore(initial = []) {
+    const history = initial.slice();
+    return {
+      push(role, content) { history.push({ role, content }); return this; },
+      toContext(systemPrompt = DEFAULT_SYSTEM) { return [{ role:'system', content: systemPrompt }, ...history]; },
+      all() { return history.slice(); },
+      clear() { history.length = 0; }
+    };
+  }
+
+  global.WHOAI_TALK = { talk, createStore };
+})(typeof window !== 'undefined' ? window : globalThis);
 <!DOCTYPE html>
 <html lang="ja">
 <head>
