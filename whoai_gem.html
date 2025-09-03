@@ -13,20 +13,20 @@
   #titleScreen h1{font-size:clamp(24px,6vw,48px);margin:0 0 20px}
   #titleScreen button{padding:10px 20px;border:none;border-radius:12px;font-size:18px;cursor:pointer}
 
-  .whoai{position:absolute;bottom:12vh;left:10vw;width:clamp(80px,12vw,140px);user-select:none;animation:hop 2s infinite;transition:all 4s ease-in-out}
+  .whoai{position:absolute;bottom:12vh;left:10vw;width:clamp(80px,12vw,140px);user-select:none;animation:hop 2s infinite;transition:all 4s ease-in-out;z-index:6}
   @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 
-  .bucket{position:absolute;right:2vw;bottom:6vh;width:clamp(72px,14vw,140px)}
+  .bucket{position:absolute;right:2vw;bottom:6vh;width:clamp(72px,14vw,140px);z-index:8}
   .bucket img{width:100%;height:auto}
-  #counter{position:absolute;right:calc(2vw + 40px);bottom:calc(6vh + 40px);font-size:clamp(16px,2vw,24px);background:#fff;color:#111;padding:6px 12px;border-radius:50%}
+  #counter{position:absolute;right:calc(2vw + 40px);bottom:calc(6vh + 40px);font-size:clamp(16px,2vw,24px);background:#fff;color:#111;padding:6px 12px;border-radius:50%;z-index:9}
 
   .ui{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10}
   .ui button{padding:6px 10px;border-radius:12px;border:none;cursor:pointer}
   #toast{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:6px;z-index:10}
   #langSel{position:absolute;top:10px;right:10px;z-index:10}
 
-  .shell,.macaron{position:absolute;width:60px;height:60px;background-size:contain;background-repeat:no-repeat;background-position:center;cursor:grab;user-select:none;touch-action:none}
-  .speech{position:absolute;padding:6px 12px;border-radius:12px;font-size:14px;white-space:nowrap;animation:fadeout 3s forwards}
+  .shell,.macaron{position:absolute;width:60px;height:60px;background-size:contain;background-repeat:no-repeat;background-position:center;cursor:grab;user-select:none;touch-action:none;z-index:4}
+  .speech{position:absolute;padding:6px 12px;border-radius:12px;font-size:14px;white-space:nowrap;animation:fadeout 6s forwards}
   .speech.day{background:#fff;color:#000}
   .speech.night{background:#fff;color:#000}
   @keyframes fadeout{0%{opacity:1;transform:translate(-50%,-100%)}100%{opacity:0;transform:translate(-50%,-150%)}}
@@ -59,7 +59,7 @@
   <!-- UI -->
   <div id="toast"></div>
   <div class="ui">
-    <button id="btnStart">はじめる</button>
+    <button id="btnStart">はじめに</button>
     <button id="btnCook">料理</button>
     <button id="btnAcc">アクセサリー</button>
     <button id="btnCol">コレクション</button>
@@ -73,13 +73,12 @@
   </select>
 
 <script>
-// ---------------- 状態 ----------------
 let count=0, whoaiName="WHOAI", macaronGiven=false;
 let currentScene="sunrise";
 const COMMON=["./public/items/asari1.png","./public/items/asari2.png","./public/items/asari3.png"];
 const MACARONS=["./public/items/macaroon1.png","./public/items/macaroon2.png","./public/items/macaroon3.png"];
 
-// ---------------- 背景切替 ----------------
+// 背景切替
 function showScene(id){
   document.querySelectorAll(".bg").forEach(bg=>bg.classList.add("hide"));
   document.getElementById(id).classList.remove("hide");
@@ -87,10 +86,12 @@ function showScene(id){
   if(id==="bg-beach"){
     document.getElementById("sand").classList.remove("hide");
     initSand();spawnShells(5);wanderWhoai();
+    // 吹き出し
+    showSpeech("砂をよけて、貝を探してね",true);
   }
 }
 
-// ---------------- 砂Canvas ----------------
+// 砂Canvas
 const sand=document.getElementById("sand");
 const ctx=sand.getContext("2d");
 function resizeSand(){
@@ -104,11 +105,13 @@ function erase(x,y){
   ctx.globalCompositeOperation="destination-out";
   ctx.beginPath();ctx.arc(x,y,40,0,Math.PI*2);ctx.fill();
   ctx.globalCompositeOperation="source-over";
+  // 最初のタッチで吹き出しを消す
+  document.querySelectorAll(".speech").forEach(s=>s.remove());
 }
 sand.addEventListener("pointerdown",e=>{erase(e.clientX,e.clientY)});
 sand.addEventListener("pointermove",e=>{if(e.buttons) erase(e.clientX,e.clientY)});
 
-// ---------------- 貝 ----------------
+// 貝
 function spawnShells(n=5){
   for(let i=0;i<n;i++){
     const img=COMMON[Math.floor(Math.random()*COMMON.length)];
@@ -117,7 +120,6 @@ function spawnShells(n=5){
     shell.style.backgroundImage=`url(${img})`;
     shell.style.left=(Math.random()*70+10)+"%";
     shell.style.top=(Math.random()*40+40)+"%";
-    shell.style.zIndex=4;
     document.body.appendChild(shell);
     makeDraggable(shell);
   }
@@ -133,7 +135,7 @@ function spawnMacaron(){
   document.body.appendChild(mac);
 }
 
-// ---------------- ドラッグ ----------------
+// ドラッグ
 function makeDraggable(el){
   let dragging=false,offX=0,offY=0;
   el.addEventListener("pointerdown",e=>{dragging=true;offX=e.clientX-el.offsetLeft;offY=e.clientY-el.offsetTop;});
@@ -150,19 +152,20 @@ function makeDraggable(el){
   });
 }
 
-// ---------------- キャラ ----------------
+// キャラ
 function wanderWhoai(){
   const w=document.getElementById("whoai");w.classList.remove("hide");
   setInterval(()=>{
     w.style.left=Math.random()*70+10+"%";
-    w.style.bottom=(10+Math.random()*60)+"vh"; // ← 上の方まで移動可能
+    w.style.bottom=(10+Math.random()*60)+"vh";
   },5000);
 }
-function showSpeech(text){
+function showSpeech(text,sticky=false){
   const w=document.getElementById("whoai");const r=w.getBoundingClientRect();
   const sp=document.createElement("div");sp.className=`speech ${currentScene}`;
   sp.textContent=text;sp.style.left=(r.left+r.width/2)+"px";sp.style.top=r.top+"px";
-  document.body.appendChild(sp);setTimeout(()=>sp.remove(),2500);
+  document.body.appendChild(sp);
+  if(!sticky) setTimeout(()=>sp.remove(),2500);
 }
 function askName(){
   const name=prompt("キャラに名前をつけてください",whoaiName);
@@ -170,7 +173,7 @@ function askName(){
   showSpeech(`${whoaiName}「またあした。星を見ながら語ろう」`);
 }
 
-// ---------------- UI ----------------
+// UI
 document.getElementById("btnTitleStart").onclick=()=>{document.getElementById("titleScreen").style.display="none";showScene("bg-sunrise");};
 document.getElementById("btnStart").onclick=()=>showScene("bg-beach");
 document.getElementById("btnNight").onclick=()=>{showScene("bg-night");askName();};
@@ -178,7 +181,7 @@ document.getElementById("btnCook").onclick=()=>alert("料理シーンへ");
 document.getElementById("btnAcc").onclick=()=>alert("アクセサリーシーンへ");
 document.getElementById("btnCol").onclick=()=>alert("コレクションシーンへ");
 
-// ---------------- Init ----------------
+// 初期化
 resizeSand();
 </script>
 </body>
