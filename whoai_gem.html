@@ -13,6 +13,15 @@
   .bg{position:fixed;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .7s}
   .bg.show{opacity:1}
 
+  /* ウェルカム */
+  #welcome{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+           background:radial-gradient(1200px 600px at 50% 10%, rgba(255,255,255,.08), rgba(0,0,0,.65))}
+  .welcome-card{width:min(92svw,720px);background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);
+    border-radius:18px;padding:24px;text-align:center}
+  .welcome-title{font-size:clamp(24px,4vw,36px);font-weight:800;margin:0 0 10px}
+  .welcome-btn{margin-top:16px;padding:10px 18px;border:none;border-radius:12px;background:#ffc6db;color:#3a2a34;font-weight:700;cursor:pointer}
+
   /* WHOAI */
   #whoaiWrap{position:fixed;left:5vw;bottom:12vh;z-index:5;touch-action:none;display:none}
   #whoai{width:clamp(82px,12vw,140px);user-select:none;animation:hop 2s infinite}
@@ -26,9 +35,9 @@
   #bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(74px,14vw,160px)}
   #bucket img{width:100%;display:block}
   #counter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-           background:#fff;color:#111;border-radius:999px;padding:4px 8px;font-weight:600;pointer-events:none}
+           background:#fff;color:#111;border-radius:999px;padding:4px 8px;font-weight:700;pointer-events:none}
 
-  /* 砂＆貝（既存仕様そのまま） */
+  /* 砂＆貝 */
   #sand{position:fixed;inset:0;z-index:2;touch-action:none}
   .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:clamp(48px,6vw,72px);
          transform:translate(-50%,-50%) scale(.92);
@@ -42,16 +51,7 @@
   .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
   .ui button{padding:6px 12px;border:none;border-radius:10px;cursor:pointer}
 
-  /* ウェルカム */
-  #welcome{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
-           background:radial-gradient(1200px 600px at 50% 10%, rgba(255,255,255,.08), rgba(0,0,0,.65))}
-  .welcome-card{width:min(92svw,720px);background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);
-    border-radius:18px;padding:24px;text-align:center}
-  .welcome-title{font-size:clamp(24px,4vw,36px);font-weight:800;margin:0 0 10px}
-  .welcome-btn{margin-top:16px;padding:10px 18px;border:none;border-radius:12px;background:#ffc6db;color:#3a2a34;font-weight:700;cursor:pointer}
-
-  /* キャラ選択パネル */
+  /* キャラ選択 */
   .panel{position:fixed;inset:0;z-index:18;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center}
   .panel.show{display:flex}
   .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,980px);max-height:80svh;overflow:auto}
@@ -61,6 +61,23 @@
   .choice-img{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 6px}
   .choice-fallback{display:none;padding:26px 0;color:#666}
   .close{margin-top:10px;padding:6px 12px;border:none;border-radius:8px;cursor:pointer}
+
+  /* 夜の会話モーダル */
+  #talk{position:fixed;inset:0;z-index:22;display:none;align-items:center;justify-content:center;
+        background:linear-gradient(#0008,#000d)}
+  #talk.show{display:flex}
+  .talk-card{width:min(92svw,860px);height:min(80svh,640px);background:rgba(8,12,26,.7);
+             border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px);
+             border-radius:16px;padding:14px;display:flex;flex-direction:column}
+  .talk-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .talk-log{flex:1;overflow:auto;border-radius:8px;padding:10px;background:rgba(255,255,255,.06)}
+  .msg{margin:.4rem 0}
+  .me{color:#ffd}
+  .ai{color:#b8d1ff}
+  .talk-form{display:flex;gap:8px;margin-top:8px}
+  .talk-form textarea{flex:1;resize:none;height:64px;border-radius:10px;border:none;padding:8px;font-size:14px}
+  .talk-form button{padding:8px 12px;border:none;border-radius:10px;cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -82,7 +99,7 @@
 
   <!-- WHOAI -->
   <div id="whoaiWrap">
-    <img id="whoai" src="./assets/stage1/green_open.png" alt="whoai">
+    <img id="whoai" src="./public/assets/stage1/orange_closed.png" alt="whoai">
     <div id="bubble" class="bubble">やったね！</div>
   </div>
 
@@ -98,7 +115,7 @@
   <!-- トースト & UI -->
   <div id="toast"></div>
   <div class="ui">
-    <button id="btnStart">スタート</button>
+    <button id="btnStart">キャラを選ぶ</button>
     <button id="btnBegin">はじめに</button>
     <button id="btnNight">夜へ</button>
   </div>
@@ -109,6 +126,21 @@
       <h2 style="margin-top:0">キャラを選んでね</h2>
       <div id="charGrid" class="grid"></div>
       <button class="close" onclick="closeCharPanel()">閉じる</button>
+    </div>
+  </div>
+
+  <!-- 夜の会話 -->
+  <div id="talk">
+    <div class="talk-card">
+      <div class="talk-head">
+        <div>🌌 またあした。<b>星を見ながら語ろう</b></div>
+        <button onclick="closeTalk()" class="close">閉じる</button>
+      </div>
+      <div id="log" class="talk-log"></div>
+      <form id="talkForm" class="talk-form">
+        <textarea id="talkInput" placeholder="今日のこと、なにを話す？"></textarea>
+        <button type="submit">送信</button>
+      </form>
     </div>
   </div>
 
@@ -124,11 +156,11 @@ const bg = {
 let currentScene='sunrise';
 function scene(name){ Object.values(bg).forEach(e=>e.classList.remove('show')); bg[name].classList.add('show'); currentScene=name; }
 
-/* ========== ウェルカム ========== */
+/* ========== ウェルカム → 朝焼け & キャラ選択 ========== */
 document.getElementById('welcomeStart').onclick = ()=>{
   document.getElementById('welcome').style.display='none';
   scene('sunrise'); say('おはよう。朝日がきれいだね');
-  openCharPanel();  // すぐキャラ選択へ
+  openCharPanel();
 };
 
 /* ========== WHOAI & 吹き出し ========== */
@@ -186,7 +218,7 @@ whoaiWrap.addEventListener('pointermove',e=>{
 whoaiWrap.addEventListener('pointerup',()=>{ wpid=null; },{passive:false});
 whoaiWrap.addEventListener('pointercancel',()=>{ wpid=null; },{passive:false});
 
-/* ========== 貝の出現（間引き） ========== */
+/* ========== 貝（間引きスポーン） ========== */
 const COMMON=['./public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'];
 const RARE  =['./public/items/aurora_shell.png','./public/items/flame_shell.png','./public/items/luminous_shell.png','./public/items/mystic_shell.png','./public/items/night_sky_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png','./public/items/wave_shell.png'];
 const shells=[]; const MAX_SHELLS=9, MIN_DIST=90, SPAWN_PROB=.32;
@@ -210,6 +242,8 @@ function maybeSpawnNear(x,y){
   document.body.appendChild(el); requestAnimationFrame(()=>el.classList.add('show'));
   enableShellDrag(el); shells.push({el,x:px,y:py});
 }
+
+/* ドラッグでバケツ吸い込み */
 function enableShellDrag(el){
   let pid=null, dx=0, dy=0;
   el.addEventListener('pointerdown',e=>{
@@ -236,15 +270,15 @@ function enableShellDrag(el){
   el.addEventListener('pointercancel',end,{passive:false});
 }
 
-/* 指でも砂を削れる（保険） */
+/* 砂を直接なでてもOK（保険） */
 sand.addEventListener('pointerdown',e=>{ if(currentScene!=='beach')return; e.preventDefault(); brushAt(e.clientX,e.clientY);},{passive:false});
 sand.addEventListener('pointermove',e=>{ if(currentScene!=='beach'||e.pressure===0) return; e.preventDefault(); brushAt(e.clientX,e.clientY);},{passive:false});
 
-/* ========== キャラ選択 ========== */
+/* ========== キャラ選択（public/assets/stage1/） ========== */
 const CHAR_LIST = [
   'blue_closed.png','green_open.png','orange_closed.png','pink_closed.png','purple_closed.png',
   'tane_green.png','tane_pink.png','tane_purple.png','tane_blue.png'
-].map(n=>`./assets/stage1/${n}`);
+].map(n=>`./public/assets/stage1/${n}`);
 
 const charPanel=document.getElementById('charPanel');
 const charGrid =document.getElementById('charGrid');
@@ -268,17 +302,63 @@ function openCharPanel(){
 }
 function closeCharPanel(){ charPanel.classList.remove('show'); }
 
+/* ========== 夜の会話 UI + API 呼び出し ========== */
+const talk     = document.getElementById('talk');
+const logEl    = document.getElementById('log');
+const form     = document.getElementById('talkForm');
+const inputEl  = document.getElementById('talkInput');
+const history  = []; // {role:'user'|'assistant', content:''}
+
+function openTalk(){
+  talk.classList.add('show');
+  if(!history.length){
+    pushMsg('assistant','こんばんは。今日の海、どんなふうに感じましたか？');
+  }
+}
+function closeTalk(){ talk.classList.remove('show'); }
+
+function pushMsg(role,text){
+  history.push({role,content:text});
+  const p=document.createElement('div');
+  p.className='msg '+(role==='user'?'me':'ai');
+  p.textContent=(role==='user'?'あなた: ':'WhoAI: ')+text;
+  logEl.appendChild(p); logEl.scrollTop=logEl.scrollHeight;
+}
+
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const text=inputEl.value.trim(); if(!text) return;
+  inputEl.value=''; pushMsg('user',text);
+
+  try{
+    const res = await fetch('./api/talk', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:history})
+    });
+    const data = await res.json();
+    const reply = data?.reply || 'うん、そう感じたのですね。明日もいっしょに見てみましょう。';
+    pushMsg('assistant', reply);
+  }catch(err){
+    pushMsg('assistant','（通信がうまくいきませんでした。明日また話しましょう）');
+  }
+});
+
 /* ========== ボタン ========== */
-document.getElementById('btnStart').onclick = ()=>openCharPanel();          // いつでも選び直しOK
+document.getElementById('btnStart').onclick = ()=>openCharPanel();
 document.getElementById('btnBegin').onclick = ()=>{
   scene('beach'); say('砂をやさしくなでてみよう'); resizeSand(); initDepth();
 };
-document.getElementById('btnNight').onclick = ()=>{ scene('night'); say('また明日'); };
+document.getElementById('btnNight').onclick = ()=>{
+  scene('night'); say('またあした。星を見ながら語ろう'); openTalk();
+};
 
-/* ========== 初期化 & スクロール抑止 ========== */
+/* ========== 初期化 ========== */
 function init(){ scene('sunrise'); resizeSand(); }
 addEventListener('resize', resizeSand);
 init();
+
+/* スクロール抑止（スマホの誤スクロール防止） */
 addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
 addEventListener('wheel',      e=>e.preventDefault(), {passive:false});
 </script>
