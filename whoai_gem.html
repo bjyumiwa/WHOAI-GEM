@@ -6,7 +6,280 @@
 <title>WHOAI Gem</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans JP',sans-serif;<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<title>WHOAI Gem</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans JP',sans-serif;
+    touch-action:none; overscroll-behavior:none}
+
+  /* 背景 */
+  .bg{position:fixed;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .7s}
+  .bg.show{opacity:1}
+
+  /* ウェルカム */
+  #welcome{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+           background:radial-gradient(1200px 600px at 50% 10%, rgba(255,255,255,.08), rgba(0,0,0,.65))}
+  .welcome-card{width:min(92svw,720px);background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);
+    border-radius:18px;padding:24px;text-align:center}
+  .welcome-title{font-size:clamp(24px,4vw,36px);font-weight:800;margin:0 0 10px}
+  .welcome-btn{margin-top:16px;padding:10px 18px;border:none;border-radius:12px;background:#ffc6db;color:#3a2a34;font-weight:700;cursor:pointer}
+
+  /* WHOAI */
+  #whoaiWrap{position:fixed;left:5vw;bottom:12vh;z-index:5;touch-action:none;display:none}
+  #whoai{width:clamp(82px,12vw,140px);user-select:none;animation:hop 2s infinite}
+  @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);
+          background:#fff;color:#111;border-radius:10px;padding:4px 8px;font-size:14px;
+          box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:.18s}
+  .bubble.show{opacity:1;transform:translate(-50%,-12px)}
+
+  /* バケツ */
+  #bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(74px,14vw,160px)}
+  #bucket img{width:100%;display:block}
+  #counter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+           background:#fff;color:#111;border-radius:999px;padding:4px 8px;font-weight:700;pointer-events:none}
+
+  /* 砂＆貝 */
+  #sand{position:fixed;inset:0;z-index:2;touch-action:none}
+  .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:clamp(48px,6vw,72px);
+         transform:translate(-50%,-50%) scale(.92);
+         background-size:contain;background-repeat:no-repeat;background-position:center;
+         cursor:grab;touch-action:none;opacity:0;transition:opacity .18s, transform .18s}
+  .shell.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .shell.drag{opacity:.95;transform:translate(-50%,-50%) scale(1.03)}
+
+  /* トースト & UI */
+  #toast{position:fixed;left:10px;top:10px;z-index:10;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:8px}
+  .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+  .ui button{padding:6px 12px;border:none;border-radius:10px;cursor:pointer}
+
+  /* キャラ選択 */
+  .panel{position:fixed;inset:0;z-index:18;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center}
+  .panel.show{display:flex}
+  .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,980px);max-height:80svh;overflow:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+  .choice{border:1px solid #eee;border-radius:12px;padding:8px;text-align:center;cursor:pointer;transition:transform .12s}
+  .choice:hover{transform:translateY(-2px)}
+  .choice-img{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 6px}
+  .choice-fallback{display:none;padding:26px 0;color:#666}
+  .close{margin-top:10px;padding:6px 12px;border:none;border-radius:8px;cursor:pointer}
+
+  /* 夜の会話 */
+  #talk{position:fixed;inset:0;z-index:22;display:none;align-items:center;justify-content:center;
+        background:linear-gradient(#0008,#000d)}
+  #talk.show{display:flex}
+  .talk-card{width:min(92svw,860px);height:min(80svh,640px);background:rgba(8,12,26,.7);
+             border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px);
+             border-radius:16px;padding:14px;display:flex;flex-direction:column}
+  .talk-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .talk-log{flex:1;overflow:auto;border-radius:8px;padding:10px;background:rgba(255,255,255,.06)}
+  .msg{margin:.4rem 0}
+  .me{color:#ffd}
+  .ai{color:#b8d1ff}
+  .talk-form{display:flex;gap:8px;margin-top:8px}
+  .talk-form textarea{flex:1;resize:none;height:64px;border-radius:10px;border:none;padding:8px;font-size:14px}
+  .talk-form button{padding:8px 12px;border:none;border-radius:10px;cursor:pointer}
+</style>
+</head>
+<body>
+  <!-- 背景 -->
+  <div id="bg-sunrise" class="bg" style="background-image:url('./public/bg/sunrise.jpg')"></div>
+  <div id="bg-beach"   class="bg" style="background-image:url('./public/bg/beach_day.jpg')"></div>
+  <div id="bg-night"   class="bg" style="background-image:url('./public/bg/night_beach.jpg')"></div>
+
+  <!-- ウェルカム -->
+  <div id="welcome">
+    <div class="welcome-card">
+      <h1 class="welcome-title">WhoAIへようこそ</h1>
+      <img src="./public/assets/stage1/ako.png"
+           onerror="this.onerror=null; this.src='./public/assets/stage1/orange_closed.png';"
+           alt="ako" style="width:120px;height:120px;object-fit:contain;margin:8px 0;">
+      <p style="opacity:.9;margin:10px 0 0">あなたの選択で姿を変え、進化していきます。<br>たくさんの会話と砂さがしを楽しんでください。</p>
+      <button id="welcomeStart" class="welcome-btn">はじめる</button>
+      <div style="margin-top:10px;opacity:.85"><a href="./about/index.html" style="color:#ffd;">この研究について</a></div>
+    </div>
+  </div>
+
+  <!-- WHOAI -->
+  <div id="whoaiWrap">
+    <img id="whoai" src="./public/assets/stage1/orange_closed.png" alt="whoai">
+    <div id="bubble" class="bubble">やったね！</div>
+  </div>
+
+  <!-- バケツ -->
+  <div id="bucket">
+    <img id="bucketImg" src="./public/bucket.png" alt="bucket">
+    <div id="counter">0</div>
+  </div>
+
+  <!-- 砂 -->
+  <canvas id="sand"></canvas>
+
+  <!-- トースト & UI -->
+  <div id="toast"></div>
+  <div class="ui">
+    <button id="btnStart">キャラを選ぶ</button>
+    <button id="btnBegin">はじめに</button>
+    <button id="btnNight">夜へ</button>
+  </div>
+
+  <!-- キャラ選択 -->
+  <div id="charPanel" class="panel">
+    <div class="card">
+      <h2 style="margin-top:0">キャラを選んでね</h2>
+      <div id="charGrid" class="grid"></div>
+      <button class="close" onclick="closeCharPanel()">閉じる</button>
+    </div>
+  </div>
+
+  <!-- 夜の会話 -->
+  <div id="talk">
+    <div class="talk-card">
+      <div class="talk-head">
+        <div>🌌 またあした。<b>星を見ながら語ろう</b></div>
+        <button onclick="closeTalk()" class="close">閉じる</button>
+      </div>
+      <div id="log" class="talk-log"></div>
+      <form id="talkForm" class="talk-form">
+        <textarea id="talkInput" placeholder="今日のこと、なにを話す？"></textarea>
+        <button type="submit">送信</button>
+      </form>
+    </div>
+  </div>
+
+<script>
+/* 共通UI */
+const toast = document.getElementById('toast');
+const say = (s)=>toast.textContent=s;
+const bg = {
+  sunrise: document.getElementById('bg-sunrise'),
+  beach  : document.getElementById('bg-beach'),
+  night  : document.getElementById('bg-night')
+};
+let currentScene='sunrise';
+function scene(name){ Object.values(bg).forEach(e=>e.classList.remove('show')); bg[name].classList.add('show'); currentScene=name; }
+
+/* ウェルカム */
+document.getElementById('welcomeStart').onclick = ()=>{
+  document.getElementById('welcome').style.display='none';
+  scene('sunrise'); say('おはよう。朝日がきれいだね');
+  openCharPanel();
+};
+
+/* WHOAI */
+const whoaiWrap = document.getElementById('whoaiWrap');
+const whoai     = document.getElementById('whoai');
+const bubble    = document.getElementById('bubble');
+function showBubble(text){ bubble.textContent=text; bubble.classList.add('show'); setTimeout(()=>bubble.classList.remove('show'),900); }
+
+/* バケツ */
+const bucket  = document.getElementById('bucket');
+const counter = document.getElementById('counter');
+let count=0;
+
+/* 砂 */
+const sand = document.getElementById('sand');
+const ctx  = sand.getContext('2d',{willReadFrequently:true});
+const TILE=90, BRUSH=28;
+let depth={}, brushed={};
+
+function resizeSand(){
+  sand.width = innerWidth; sand.height= innerHeight;
+  const g=ctx.createLinearGradient(0,0,0,sand.height);
+  g.addColorStop(0,'#E7D9B7'); g.addColorStop(.6,'#D9C79E'); g.addColorStop(1,'#C8B68F');
+  ctx.fillStyle=g; ctx.fillRect(0,0,sand.width,sand.height);
+}
+function initDepth(){
+  depth={}; brushed={};
+  const cols=Math.ceil(sand.width/TILE), rows=Math.ceil(sand.height/TILE);
+  for(let c=0;c<cols;c++) for(let r=0;r<rows;r++){
+    const p=Math.random(); depth[`${c},${r}`]=(p<.10)?3:(p<.45)?2:1; brushed[`${c},${r}`]=0;
+  }
+}
+function brushAt(x,y){
+  ctx.globalCompositeOperation='destination-out';
+  ctx.beginPath(); ctx.arc(x,y,BRUSH,0,Math.PI*2); ctx.fill();
+  ctx.globalCompositeOperation='source-over';
+  const c=Math.floor(x/TILE), r=Math.floor(y/TILE), key=`${c},${r}`;
+  if(depth[key]===Infinity || depth[key]==null) return;
+  if(++brushed[key] >= depth[key]){ depth[key]=Infinity; maybeSpawnNear(x,y); }
+}
+
+/* WHOAIドラッグで砂を削る */
+let wpid=null;
+whoaiWrap.addEventListener('pointerdown',e=>{
+  e.preventDefault(); wpid=e.pointerId; whoaiWrap.setPointerCapture(wpid);
+},{passive:false});
+whoaiWrap.addEventListener('pointermove',e=>{
+  if(e.pointerId!==wpid) return; e.preventDefault();
+  const w=whoaiWrap.offsetWidth, h=whoaiWrap.offsetHeight;
+  const x=Math.max(0,Math.min(innerWidth -w, e.clientX - w/2));
+  const y=Math.max(0,Math.min(innerHeight-h, e.clientY - h/2));
+  whoaiWrap.style.left=x+'px'; whoaiWrap.style.top=y+'px';
+  if(currentScene==='beach') brushAt(e.clientX,e.clientY);
+},{passive:false});
+whoaiWrap.addEventListener('pointerup',()=>{ wpid=null; },{passive:false});
+
+/* 貝 */
+const COMMON=['./public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'];
+const RARE  =['./public/items/aurora_shell.png','./public/items/flame_shell.png','./public/items/luminous_shell.png','./public/items/mystic_shell.png','./public/items/night_sky_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png','./public/items/wave_shell.png'];
+const shells=[]; const MAX_SHELLS=9, MIN_DIST=90, SPAWN_PROB=.32;
+
+function tooClose(x,y){ return shells.some(s=>Math.hypot(s.x-x,s.y-y)<MIN_DIST); }
+function avoidBucket(x,y){
+  const b=bucket.getBoundingClientRect(); const cx=b.left+b.width/2, cy=b.top+b.height/2;
+  return Math.hypot(cx-x,cy-y)<120;
+}
+function maybeSpawnNear(x,y){
+  if(shells.length>=MAX_SHELLS) return;
+  if(Math.random()>SPAWN_PROB) return;
+  let px=x+(Math.random()*2-1)*90, py=y+(Math.random()*2-1)*90;
+  px=Math.max(50,Math.min(innerWidth -50,px));
+  py=Math.max(90,Math.min(innerHeight-90,py));
+  if(tooClose(px,py) || avoidBucket(px,py)) return;
+
+  const pool=Math.random()<0.8?COMMON:RARE; const src=pool[Math.floor(Math.random()*pool.length)];
+  const el=document.createElement('div'); el.className='shell'; el.style.left=px+'px'; el.style.top=py+'px';
+  el.style.backgroundImage=`url(${src})`;
+  document.body.appendChild(el); requestAnimationFrame(()=>el.classList.add('show'));
+  enableShellDrag(el); shells.push({el,x:px,y:py});
+}
+function enableShellDrag(el){
+  let pid=null, dx=0, dy=0;
+  el.addEventListener('pointerdown',e=>{
+    e.preventDefault(); pid=e.pointerId; el.setPointerCapture(pid);
+    dx=e.clientX-parseFloat(el.style.left); dy=e.clientY-parseFloat(el.style.top);
+    el.classList.add('drag');
+  },{passive:false});
+  el.addEventListener('pointermove',e=>{
+    if(e.pointerId!==pid) return; e.preventDefault();
+    el.style.left=(e.clientX-dx)+'px'; el.style.top=(e.clientY-dy)+'px';
+  },{passive:false});
+  function end(e){
+    if(e.pointerId!==pid) return; e.preventDefault();
+    el.classList.remove('drag'); el.releasePointerCapture(pid); pid=null;
+    const b=bucket.getBoundingClientRect(), s=el.getBoundingClientRect(), pad=18;
+    const hit=!(s.right<b.left-pad || s.left>b.right+pad || s.bottom<b.top-pad || s.top>b.bottom+pad);
+    if(hit){
+      el.remove();
+      const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1);
+      counter.textContent=++count; showBubble('やったね！');
+    }
+  }
+  el.addEventListener('pointerup',end,{passive:false});
+  el.addEventListener('pointercancel',end,{passive:false});
+}
+
+/* 砂タッチ */
+sand.addEventListener('pointerdown',e=>{ if(currentScene!=='beach')return; e.preventDefault(); brushAt(e.clientX,e.clientY);},{passive:false});
+sand.addEventListener('pointerm
+
     touch-action:none; overscroll-behavior:none}
 
   /* 背景 */
