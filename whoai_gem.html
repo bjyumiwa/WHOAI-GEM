@@ -13,7 +13,7 @@
   .bg{position:fixed;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .7s}
   .bg.show{opacity:1}
 
-  /* WHOAI（ドラッグで砂を削る） */
+  /* WHOAI */
   #whoaiWrap{position:fixed;left:5vw;bottom:12vh;z-index:5;touch-action:none;display:none}
   #whoai{width:clamp(82px,12vw,140px);user-select:none;animation:hop 2s infinite}
   @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
@@ -28,7 +28,7 @@
   #counter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
            background:#fff;color:#111;border-radius:999px;padding:4px 8px;font-weight:600;pointer-events:none}
 
-  /* 砂キャンバス & 貝 */
+  /* 砂＆貝（既存仕様そのまま） */
   #sand{position:fixed;inset:0;z-index:2;touch-action:none}
   .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:clamp(48px,6vw,72px);
          transform:translate(-50%,-50%) scale(.92);
@@ -37,19 +37,29 @@
   .shell.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
   .shell.drag{opacity:.95;transform:translate(-50%,-50%) scale(1.03)}
 
-  /* UI */
+  /* トースト & UI */
   #toast{position:fixed;left:10px;top:10px;z-index:10;background:rgba(0,0,0,.6);padding:6px 12px;border-radius:8px}
   .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
   .ui button{padding:6px 12px;border:none;border-radius:10px;cursor:pointer}
 
+  /* ウェルカム */
+  #welcome{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+           background:radial-gradient(1200px 600px at 50% 10%, rgba(255,255,255,.08), rgba(0,0,0,.65))}
+  .welcome-card{width:min(92svw,720px);background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);
+    border-radius:18px;padding:24px;text-align:center}
+  .welcome-title{font-size:clamp(24px,4vw,36px);font-weight:800;margin:0 0 10px}
+  .welcome-btn{margin-top:16px;padding:10px 18px;border:none;border-radius:12px;background:#ffc6db;color:#3a2a34;font-weight:700;cursor:pointer}
+
   /* キャラ選択パネル */
-  .panel{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center}
+  .panel{position:fixed;inset:0;z-index:18;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center}
   .panel.show{display:flex}
   .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,980px);max-height:80svh;overflow:auto}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
   .choice{border:1px solid #eee;border-radius:12px;padding:8px;text-align:center;cursor:pointer;transition:transform .12s}
   .choice:hover{transform:translateY(-2px)}
-  .choice img{max-width:100%;height:auto;display:block;margin:0 auto 6px}
+  .choice-img{width:100px;height:100px;object-fit:contain;display:block;margin:0 auto 6px}
+  .choice-fallback{display:none;padding:26px 0;color:#666}
   .close{margin-top:10px;padding:6px 12px;border:none;border-radius:8px;cursor:pointer}
 </style>
 </head>
@@ -58,6 +68,17 @@
   <div id="bg-sunrise" class="bg" style="background-image:url('./public/bg/sunrise.jpg')"></div>
   <div id="bg-beach"   class="bg" style="background-image:url('./public/bg/beach_day.jpg')"></div>
   <div id="bg-night"   class="bg" style="background-image:url('./public/bg/night_beach.jpg')"></div>
+
+  <!-- ウェルカム -->
+  <div id="welcome">
+    <div class="welcome-card">
+      <h1 class="welcome-title">WhoAIへようこそ</h1>
+      <div style="font-size:66px;line-height:1.1">🌅</div>
+      <p style="opacity:.9;margin:10px 0 0">あなたの選択で姿を変え、進化していきます。<br>たくさんの会話と砂さがしを楽しんでください。</p>
+      <button id="welcomeStart" class="welcome-btn">はじめる</button>
+      <div style="margin-top:10px;opacity:.85"><a href="./research/index.html" style="color:#ffd;">この研究について</a></div>
+    </div>
+  </div>
 
   <!-- WHOAI -->
   <div id="whoaiWrap">
@@ -92,7 +113,7 @@
   </div>
 
 <script>
-/* === 基本UI === */
+/* ========== 共通UI ========== */
 const toast = document.getElementById('toast');
 const say = (s)=>toast.textContent=s;
 const bg = {
@@ -103,18 +124,25 @@ const bg = {
 let currentScene='sunrise';
 function scene(name){ Object.values(bg).forEach(e=>e.classList.remove('show')); bg[name].classList.add('show'); currentScene=name; }
 
-/* === WHOAI & 吹き出し === */
+/* ========== ウェルカム ========== */
+document.getElementById('welcomeStart').onclick = ()=>{
+  document.getElementById('welcome').style.display='none';
+  scene('sunrise'); say('おはよう。朝日がきれいだね');
+  openCharPanel();  // すぐキャラ選択へ
+};
+
+/* ========== WHOAI & 吹き出し ========== */
 const whoaiWrap = document.getElementById('whoaiWrap');
 const whoai     = document.getElementById('whoai');
 const bubble    = document.getElementById('bubble');
 function showBubble(text){ bubble.textContent=text; bubble.classList.add('show'); setTimeout(()=>bubble.classList.remove('show'),900); }
 
-/* === バケツ === */
+/* ========== バケツ ========== */
 const bucket  = document.getElementById('bucket');
 const counter = document.getElementById('counter');
 let count=0;
 
-/* === 砂キャンバス（深さあり） === */
+/* ========== 砂（深さあり） ========== */
 const sand = document.getElementById('sand');
 const ctx  = sand.getContext('2d',{willReadFrequently:true});
 const TILE=90, BRUSH=28;
@@ -142,7 +170,7 @@ function brushAt(x,y){
   if(++brushed[key] >= depth[key]){ depth[key]=Infinity; maybeSpawnNear(x,y); }
 }
 
-/* === WHOAIドラッグ＝砂を削る === */
+/* ========== WHOAIドラッグ＝砂を削る ========== */
 let wpid=null;
 whoaiWrap.addEventListener('pointerdown',e=>{
   e.preventDefault(); wpid=e.pointerId; whoaiWrap.setPointerCapture(wpid);
@@ -158,7 +186,7 @@ whoaiWrap.addEventListener('pointermove',e=>{
 whoaiWrap.addEventListener('pointerup',()=>{ wpid=null; },{passive:false});
 whoaiWrap.addEventListener('pointercancel',()=>{ wpid=null; },{passive:false});
 
-/* === 貝の出現（間引き：上限・最小距離・確率） === */
+/* ========== 貝の出現（間引き） ========== */
 const COMMON=['./public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'];
 const RARE  =['./public/items/aurora_shell.png','./public/items/flame_shell.png','./public/items/luminous_shell.png','./public/items/mystic_shell.png','./public/items/night_sky_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png','./public/items/wave_shell.png'];
 const shells=[]; const MAX_SHELLS=9, MIN_DIST=90, SPAWN_PROB=.32;
@@ -182,8 +210,6 @@ function maybeSpawnNear(x,y){
   document.body.appendChild(el); requestAnimationFrame(()=>el.classList.add('show'));
   enableShellDrag(el); shells.push({el,x:px,y:py});
 }
-
-/* === ドラッグでバケツ吸い込み === */
 function enableShellDrag(el){
   let pid=null, dx=0, dy=0;
   el.addEventListener('pointerdown',e=>{
@@ -210,11 +236,11 @@ function enableShellDrag(el){
   el.addEventListener('pointercancel',end,{passive:false});
 }
 
-/* === 指でも砂を削れる（保険） === */
+/* 指でも砂を削れる（保険） */
 sand.addEventListener('pointerdown',e=>{ if(currentScene!=='beach')return; e.preventDefault(); brushAt(e.clientX,e.clientY);},{passive:false});
 sand.addEventListener('pointermove',e=>{ if(currentScene!=='beach'||e.pressure===0) return; e.preventDefault(); brushAt(e.clientX,e.clientY);},{passive:false});
 
-/* === キャラ選択 === */
+/* ========== キャラ選択 ========== */
 const CHAR_LIST = [
   'blue_closed.png','green_open.png','orange_closed.png','pink_closed.png','purple_closed.png',
   'tane_green.png','tane_pink.png','tane_purple.png','tane_blue.png'
@@ -223,43 +249,38 @@ const CHAR_LIST = [
 const charPanel=document.getElementById('charPanel');
 const charGrid =document.getElementById('charGrid');
 
+function addChoice(src){
+  const base = src.split('/').pop().replace('.png','');
+  const div  = document.createElement('div'); div.className='choice';
+  div.innerHTML =
+    `<img class="choice-img" src="${src}" alt="${base}"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+     <div class="choice-fallback">${base}</div>`;
+  div.onclick=()=>{ whoai.src=src; whoaiWrap.style.display='block'; closeCharPanel(); say('いっしょに探そう'); };
+  charGrid.appendChild(div);
+}
 function openCharPanel(){
-  // 初回だけ並べる
   if(!charGrid.dataset.ready){
-    CHAR_LIST.forEach(src=>{
-      const div=document.createElement('div'); div.className='choice';
-      div.innerHTML=`<img src="${src}" alt=""><div>${src.split('/').pop().replace('.png','')}</div>`;
-      div.onclick=()=>{ whoai.src=src; whoaiWrap.style.display='block'; closeCharPanel(); say('いっしょに探そう'); };
-      charGrid.appendChild(div);
-    });
+    CHAR_LIST.forEach(addChoice);
     charGrid.dataset.ready='1';
   }
   charPanel.classList.add('show');
 }
 function closeCharPanel(){ charPanel.classList.remove('show'); }
 
-/* === ボタン === */
-document.getElementById('btnStart').onclick = ()=>{ openCharPanel(); /* 朝のまま */ };
+/* ========== ボタン ========== */
+document.getElementById('btnStart').onclick = ()=>openCharPanel();          // いつでも選び直しOK
 document.getElementById('btnBegin').onclick = ()=>{
-  scene('beach'); say('砂をやさしくなでてみよう');
-  resizeSand(); initDepth();
+  scene('beach'); say('砂をやさしくなでてみよう'); resizeSand(); initDepth();
 };
-document.getElementById('btnNight').onclick = ()=>{
-  scene('night'); say('また明日');
-};
+document.getElementById('btnNight').onclick = ()=>{ scene('night'); say('また明日'); };
 
-/* === 初期化 === */
-function init(){
-  scene('sunrise'); say('おはよう。朝日がきれいだね');
-  resizeSand(); // 次のビーチに備えてキャンバスサイズ合わせ
-}
+/* ========== 初期化 & スクロール抑止 ========== */
+function init(){ scene('sunrise'); resizeSand(); }
 addEventListener('resize', resizeSand);
 init();
-
-/* === スクロール抑止（保険） === */
-function blockScroll(e){ e.preventDefault(); }
-addEventListener('touchmove', blockScroll, {passive:false});
-addEventListener('wheel',      blockScroll, {passive:false});
+addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
+addEventListener('wheel',      e=>e.preventDefault(), {passive:false});
 </script>
 </body>
 </html>
