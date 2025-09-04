@@ -51,6 +51,16 @@
   .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,600px)}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px}
   .choice{border:1px solid #eee;border-radius:12px;padding:8px;text-align:center;cursor:pointer}
+
+  /* 夜の会話 (LINE風) */
+  #nightPanel .card{width:min(96svw,640px);max-height:90vh;display:flex;flex-direction:column}
+  #chatLog{flex:1;background:#f2f2f2;padding:10px;border-radius:10px;overflow:auto}
+  .msg{margin:6px 0;padding:8px 12px;border-radius:16px;max-width:70%}
+  .msg.me{background:#aef;color:#000;margin-left:auto}
+  .msg.ai{background:#fff;color:#000;margin-right:auto}
+  #chatCtrl{display:flex;gap:6px;margin-top:8px}
+  #chatInput{flex:1;padding:8px;border-radius:12px;border:1px solid #ccc}
+  #chatSend{padding:8px 14px;border:none;border-radius:12px;background:#4cafef;color:#fff;cursor:pointer}
 </style>
 </head>
 <body>
@@ -87,6 +97,19 @@
     </div>
   </div>
 
+  <!-- 夜の会話 -->
+  <div id="nightPanel" class="panel">
+    <div class="card">
+      <h2>また明日</h2>
+      <div id="chatLog"></div>
+      <div id="chatCtrl">
+        <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
+        <button id="chatSend">送信</button>
+      </div>
+      <button onclick="closeNight()">閉じる</button>
+    </div>
+  </div>
+
 <script src="./api/talk.js"></script>
 <script>
 const toast=document.getElementById('toast');
@@ -94,9 +117,9 @@ const say=(s)=>toast.textContent=s;
 const bg={sunrise:document.getElementById('bg-sunrise'),
           beach:document.getElementById('bg-beach'),
           night:document.getElementById('bg-night')};
+let currentScene='sunrise';
 function scene(name){Object.values(bg).forEach(e=>e.classList.remove('show'));
   bg[name].classList.add('show');currentScene=name;}
-let currentScene='sunrise';
 
 const whoaiWrap=document.getElementById('whoaiWrap');
 const whoai=document.getElementById('whoai');
@@ -110,12 +133,11 @@ const counter=document.getElementById('counter');let count=0;
 /* 砂キャンバス */
 const sand=document.getElementById('sand');
 const ctx=sand.getContext('2d',{willReadFrequently:true});
-const TILE=90,BRUSH=28;let depth={},brushed={};
+const TILE=90,BRUSH=28;
 function resizeSand(){sand.width=innerWidth;sand.height=innerHeight;
   const g=ctx.createLinearGradient(0,0,0,sand.height);
   g.addColorStop(0,'#e7d9b7');g.addColorStop(1,'#c8b68f');
   ctx.fillStyle=g;ctx.fillRect(0,0,sand.width,sand.height);}
-function initDepth(){depth={};brushed={};}
 function brushAt(x,y){ctx.globalCompositeOperation='destination-out';
   ctx.globalAlpha=0.4;ctx.beginPath();ctx.arc(x,y,BRUSH,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';maybeSpawnNear(x,y);}
@@ -135,7 +157,8 @@ function maybeSpawnNear(x,y){
   enableShellDrag(el,src);
 }
 function enableShellDrag(el,src){
-  let pid=null;el.addEventListener('pointerdown',e=>{pid=e.pointerId;el.setPointerCapture(pid);},{passive:false});
+  let pid=null;
+  el.addEventListener('pointerdown',e=>{pid=e.pointerId;el.setPointerCapture(pid);},{passive:false});
   el.addEventListener('pointermove',e=>{
     if(e.pointerId!==pid)return;
     el.style.left=e.clientX+'px';el.style.top=e.clientY+'px';},{passive:false});
@@ -145,6 +168,7 @@ function enableShellDrag(el,src){
     if(!(s.right<b.left||s.left>b.right||s.bottom<b.top||s.top>b.bottom)){
       el.remove();counter.textContent=++count;
       showBubble(Math.random()<0.2?"レアだよ！":"やったね！");
+      if(count===10)showBubble("マカロンゲット！");
     }},{passive:false});
 }
 
@@ -168,10 +192,27 @@ function openCharPanel(){
 }
 function closeCharPanel(){charPanel.classList.remove('show');}
 
+/* 夜シーン */
+const nightPanel=document.getElementById('nightPanel');
+const chatLog=document.getElementById('chatLog');
+const chatInput=document.getElementById('chatInput');
+const chatSend=document.getElementById('chatSend');
+function openNight(){nightPanel.classList.add('show');}
+function closeNight(){nightPanel.classList.remove('show');}
+function addMsg(role,text){
+  const div=document.createElement('div');div.className='msg '+role;div.textContent=text;
+  chatLog.appendChild(div);chatLog.scrollTop=chatLog.scrollHeight;}
+chatSend.onclick=async()=>{
+  const text=chatInput.value.trim();if(!text)return;
+  addMsg('me',text);chatInput.value='';
+  try{const {reply}=await WHOAI_TALK.talk(text,{state:{totalCollected:count}});
+    addMsg('ai',reply);}catch(e){addMsg('ai','（接続できませんでした）');}
+};
+
 /* ボタン */
 document.getElementById('btnStart').onclick=()=>{openCharPanel();};
-document.getElementById('btnBegin').onclick=()=>{scene('beach');say("砂をよけて、貝を探してね");resizeSand();initDepth();};
-document.getElementById('btnNight').onclick=()=>{scene('night');say("また明日");};
+document.getElementById('btnBegin').onclick=()=>{scene('beach');say("砂をよけて、貝を探してね");resizeSand();};
+document.getElementById('btnNight').onclick=()=>{scene('night');say("また明日");openNight();};
 document.getElementById('btnReset').onclick=()=>{localStorage.clear();location.reload();};
 
 /* 初期化 */
