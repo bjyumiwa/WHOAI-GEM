@@ -1,189 +1,175 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,user-scalable=no" />
 <title>WHOAI Gem</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  /* 各種スタイル（前版と共通）省略、必要であれば追加します */
-  body,html{margin:0;padding:0;height:100%;overflow:hidden;font-family:sans-serif;background:#000;color:#fff;touch-action:none;}
-  .bg{position:absolute;top:0;left:0;width:100%;height:100%;background-size:cover;background-position:center;transition:opacity 1s}
-  .hide{opacity:0;pointer-events:none;}
-  #titleScreen{position:absolute;...} /* 同様のスタイル省略 */
-  /* ... */
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans JP',sans-serif;
+    touch-action:none; overscroll-behavior:none}
+
+  .bg{position:fixed;inset:0;background-size:cover;background-position:center;
+      opacity:0;transition:opacity .7s}
+  .bg.show{opacity:1}
+
+  #whoaiWrap{position:fixed;left:10vw;top:20vh;z-index:5;touch-action:none;display:none}
+  #whoai{width:clamp(80px,12vw,140px);user-select:none}
+  .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);
+          background:#fff;color:#111;border-radius:10px;padding:4px 8px;font-size:14px;
+          box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:.18s}
+  .bubble.show{opacity:1;transform:translate(-50%,-12px)}
+
+  #bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(74px,14vw,160px)}
+  #bucket img{width:100%;display:block}
+  #counter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+           background:#fff;color:#111;border-radius:999px;padding:4px 8px;font-weight:600}
+
+  #sand{position:fixed;inset:0;z-index:2;touch-action:none}
+  .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:clamp(48px,6vw,72px);
+         transform:translate(-50%,-50%) scale(.9);
+         background-size:contain;background-repeat:no-repeat;background-position:center;
+         cursor:grab;opacity:0;transition:opacity .18s,transform .18s}
+  .shell.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+  #toast{position:fixed;right:10px;top:10px;z-index:10;background:rgba(255,255,255,.9);
+         color:#111;padding:6px 12px;border-radius:8px;font-size:14px}
+  .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);
+      display:flex;gap:8px;z-index:10}
+  .ui button{padding:6px 12px;border:none;border-radius:10px;cursor:pointer}
+
+  .panel{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.55);display:none;
+         align-items:center;justify-content:center}
+  .panel.show{display:flex}
+  .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,980px)}
+
+  /* 夜の会話 */
+  #chatLog{background:#fdfdfd;color:#111;border-radius:10px;padding:10px;
+           min-height:120px;max-height:40vh;overflow:auto}
+  .msg{margin:6px 0}
+  .msg.me{color:#06c}
+  .msg.ai{color:#222}
 </style>
 </head>
 <body>
-  <!-- 背景 -->
   <div id="bg-sunrise" class="bg" style="background-image:url('./public/bg/sunrise.jpg')"></div>
-  <div id="bg-beach"   class="bg hide" style="background-image:url('./public/bg/beach_day.jpg')"></div>
-  <div id="bg-night"   class="bg hide" style="background-image:url('./public/bg/night_beach.jpg')"></div>
+  <div id="bg-beach"   class="bg" style="background-image:url('./public/bg/beach_day.jpg')"></div>
+  <div id="bg-night"   class="bg" style="background-image:url('./public/bg/night_beach.jpg')"></div>
 
-  <!-- タイトル -->
-  <div id="titleScreen">
-    <h1>WHOAI Gem</h1>
-    <button id="btnTitleStart">スタート</button>
-    <button id="btnContinue" style="margin-top:10px;">続きから</button>
+  <div id="whoaiWrap">
+    <img id="whoai" src="./assets/stage1/green_open.png" alt="whoai">
+    <div id="bubble" class="bubble"></div>
   </div>
 
-  <!-- キャラ・貝・バケツ・砂Canvas・UI -->
-  <img id="whoai" class="hide" src="./public/assets/stage1/green_open.png" alt="whoai">
-  <div class="bucket"><img id="bucketImg" src="./public/bucket.png" alt="bucket"></div>
-  <div id="counter">0</div>
-  <canvas id="sand" class="hide"></canvas>
+  <div id="bucket">
+    <img id="bucketImg" src="./public/bucket.png" alt="bucket">
+    <div id="counter">0</div>
+  </div>
+
+  <canvas id="sand"></canvas>
   <div id="toast"></div>
+
   <div class="ui">
-    <button id="btnStart">はじめに</button>
-    <button id="btnReset">リセット</button>
+    <button id="btnStart">スタート</button>
+    <button id="btnBegin">はじめに</button>
     <button id="btnNight">夜へ</button>
   </div>
-  <script>
-    // 状態
-    let count = 0, whoaiName = "WHOAI", macaronGiven = false, currentScene = "sunrise";
 
-    // ローカル保存／復元
-    function saveState(){
-      localStorage.setItem("whoaiName", whoaiName);
-      localStorage.setItem("count", count);
-    }
-    function loadState(){
-      const n = localStorage.getItem("whoaiName");
-      const c = localStorage.getItem("count");
-      if(n) whoaiName = n;
-      if(c) { count = parseInt(c); document.getElementById("counter").textContent = count; }
-    }
-    function resetState(){
-      count = 0; macaronGiven = false;
-      whoaiName = "WHOAI";
-      localStorage.removeItem("count");
-      localStorage.removeItem("whoaiName");
-      document.getElementById("counter").textContent = 0;
-      document.querySelectorAll(".shell, .macaron").forEach(e=>e.remove());
-      initSand();
-    }
+  <!-- 夜の会話 -->
+  <div id="nightPanel" class="panel">
+    <div class="card">
+      <h2>また明日</h2>
+      <p>今日のコレクションは保存しました。夜空を見ながら話そうか。</p>
+      <div id="chatLog"></div>
+      <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
+      <button id="chatSend">送信</button>
+      <button onclick="closeNight()">閉じる</button>
+    </div>
+  </div>
 
-    // シーン切替
-    function showScene(id){
-      currentScene = id.includes("night") ? "night" : "day";
-      document.querySelectorAll(".bg").forEach(bg=>bg.classList.add("hide"));
-      document.getElementById(id).classList.remove("hide");
-      if(id==="bg-beach"){
-        document.getElementById("sand").classList.remove("hide");
-        initSand(); spawnShells(5); wanderWhoai();
-        showSpeech("砂をよけて、貝を探してね", true);
-      }
-      if(id==="bg-night"){
-        askName();
-      }
-    }
+<script src="./api/talk.js"></script>
+<script>
+const toast=document.getElementById('toast');
+const say=(s)=>toast.textContent=s;
+const bg={sunrise:document.getElementById('bg-sunrise'),
+          beach:document.getElementById('bg-beach'),
+          night:document.getElementById('bg-night')};
+let currentScene='sunrise';
+function scene(name){Object.values(bg).forEach(e=>e.classList.remove('show'));
+  bg[name].classList.add('show'); currentScene=name;}
 
-    // 吹き出し
-    function showSpeech(text, sticky=false){
-      const w = document.getElementById("whoai"), r = w.getBoundingClientRect();
-      const sp = document.createElement("div");
-      sp.className = `speech ${currentScene}`;
-      sp.textContent = text;
-      sp.style.left = (r.left + r.width/2) + "px";
-      sp.style.top = r.top + "px";
-      document.body.appendChild(sp);
-      if(!sticky) setTimeout(() => sp.remove(), 2500);
-    }
+const whoaiWrap=document.getElementById('whoaiWrap');
+const bubble=document.getElementById('bubble');
+function showBubble(text){bubble.textContent=text;
+  bubble.classList.add('show');setTimeout(()=>bubble.classList.remove('show'),1200);}
 
-    // 砂Canvas
-    const sand = document.getElementById("sand"), ctx = sand.getContext("2d");
-    function resizeSand(){ sand.width = innerWidth; sand.height = innerHeight;
-      const g = ctx.createLinearGradient(0,0,0,sand.height); g.addColorStop(0,"#e7d9b7");g.addColorStop(1,"#c8b68f");
-      ctx.fillStyle = g; ctx.fillRect(0,0,sand.width,sand.height);
-    }
-    function initSand(){
-      resizeSand();
-      document.querySelectorAll(".speech").forEach(e=>e.remove());
-    }
-    function erase(x,y){ ctx.globalCompositeOperation = "destination-out";
-      ctx.beginPath(); ctx.arc(x,y,40,0,Math.PI*2); ctx.fill();
-      ctx.globalCompositeOperation = "source-over";
-      document.querySelectorAll(".speech").forEach(e => e.remove());
-      saveState();
-    }
-    sand.addEventListener("pointerdown",e=>erase(e.clientX,e.clientY));
-    sand.addEventListener("pointermove",e=>{ if(e.buttons) erase(e.clientX,e.clientY); });
+const bucket=document.getElementById('bucket');
+const counter=document.getElementById('counter');
+let count=0;
 
-    // 貝とマカロン
-    const COMMON = ["./public/items/asari1.png","./public/items/asari2.png","./public/items/asari3.png"];
-    const MACARONS = ["./public/items/macaroon1.png","./public/items/macaroon2.png","./public/items/macaroon3.png"];
-    function spawnShells(n=5){ for(let i=0;i<n;i++){
-      if(Math.random()<0.4) continue; const img = COMMON[Math.floor(Math.random()*COMMON.length)];
-      const shell = document.createElement("div"); shell.className = "shell";
-      shell.style.backgroundImage = `url(${img})`;
-      shell.style.left = (Math.random()*70+10)+"%";
-      shell.style.top = (Math.random()*40+40)+"%";
-      document.body.appendChild(shell);
-      makeDraggable(shell);
-    }}
-    function spawnMacaron(){
-      if(macaronGiven) return;
-      macaronGiven = true;
-      const img = MACARONS[Math.floor(Math.random()*MACARONS.length)];
-      const mac = document.createElement("div"); mac.className = "macaron";
-      mac.style.backgroundImage = `url(${img})`;
-      mac.style.left = (Math.random()*70+10)+"%";
-      mac.style.top = (Math.random()*40+30)+"%";
-      document.body.appendChild(mac);
-    }
+const sand=document.getElementById('sand');
+const ctx=sand.getContext('2d');
+const TILE=90,BRUSH=28;let depth={},brushed={};
+function resizeSand(){sand.width=innerWidth;sand.height=innerHeight;
+  ctx.fillStyle="#d9c79e";ctx.fillRect(0,0,sand.width,sand.height);}
+function initDepth(){depth={};brushed={};}
+function brushAt(x,y){ctx.globalCompositeOperation='destination-out';
+  ctx.beginPath();ctx.arc(x,y,BRUSH,0,Math.PI*2);ctx.fill();
+  ctx.globalCompositeOperation='source-over';maybeSpawnNear(x,y);}
+sand.addEventListener('pointerdown',e=>{if(currentScene==='beach')brushAt(e.clientX,e.clientY);});
 
-    // ドラッグ処理
-    function makeDraggable(el){
-      let dragging=false, offX=0, offY=0;
-      el.addEventListener("pointerdown",e=>{dragging=true;offX=e.clientX-el.offsetLeft;offY=e.clientY-el.offsetTop;});
-      window.addEventListener("pointermove",e=>{ if(!dragging)return; el.style.left=(e.clientX-offX)+"px";el.style.top=(e.clientY-offY)+"px"; });
-      window.addEventListener("pointerup",()=>{
-        if(!dragging)return; dragging=false;
-        const b = document.getElementById("bucketImg").getBoundingClientRect();
-        const r = el.getBoundingClientRect();
-        if(r.left<b.right && r.right>b.left && r.top<b.bottom && r.bottom>b.top){
-          el.remove(); count++; document.getElementById("counter").textContent = count;
-          showSpeech("やったね!");
-          if(count === 10){ showSpeech("ご褒美！マカロンをゲット"); spawnMacaron(); }
-          saveState();
-        }
-      });
+const COMMON=['./public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'];
+const RARE=['./public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'];
+const shells=[];
+function maybeSpawnNear(x,y){
+  if(Math.random()>0.3)return;
+  const pool=Math.random()<0.8?COMMON:RARE;
+  const src=pool[Math.floor(Math.random()*pool.length)];
+  const el=document.createElement('div');el.className='shell';
+  el.style.left=x+'px';el.style.top=y+'px';el.style.backgroundImage=`url(${src})`;
+  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('show'));
+  enableShellDrag(el);
+}
+function enableShellDrag(el){
+  let pid=null;
+  el.addEventListener('pointerdown',e=>{pid=e.pointerId;el.setPointerCapture(pid);},{passive:false});
+  el.addEventListener('pointermove',e=>{
+    if(e.pointerId!==pid)return;
+    el.style.left=e.clientX+'px';el.style.top=e.clientY+'px';
+  },{passive:false});
+  el.addEventListener('pointerup',e=>{
+    if(e.pointerId!==pid)return;pid=null;
+    const b=bucket.getBoundingClientRect(),s=el.getBoundingClientRect();
+    if(!(s.right<b.left||s.left>b.right||s.bottom<b.top||s.top>b.bottom)){
+      el.remove();counter.textContent=++count;
+      showBubble(Math.random()<0.2?"レアだよ！":"やったね！");
+      if(count===10){showBubble("マカロンゲット！");}
     }
+  },{passive:false});
+}
 
-    // キャラの移動
-    function wanderWhoai(){
-      const w = document.getElementById("whoai"); w.classList.remove("hide");
-      setInterval(()=>{
-        w.style.left = Math.random()*70+10+"%";
-        w.style.bottom = (10+Math.random()*60)+"vh";
-      }, 5000);
-    }
+const nightPanel=document.getElementById('nightPanel');
+const chatLog=document.getElementById('chatLog');
+const chatInput=document.getElementById('chatInput');
+const chatSend=document.getElementById('chatSend');
+function openNight(){nightPanel.classList.add('show');}
+function closeNight(){nightPanel.classList.remove('show');}
+function addMsg(role,text){
+  const div=document.createElement('div');div.className='msg '+role;div.textContent=text;
+  chatLog.appendChild(div);chatLog.scrollTop=chatLog.scrollHeight;}
+chatSend.onclick=async()=>{
+  const text=chatInput.value.trim();if(!text)return;
+  addMsg('me',text);chatInput.value='';
+  try{const {reply}=await WHOAI_TALK.talk(text,{state:{totalCollected:count}});
+    addMsg('ai',reply);}catch(e){addMsg('ai','（接続できませんでした）');}
+};
 
-    // 会話（API呼び出しあれば）
-    async function askName(){
-      const name = prompt("キャラに名前をつけてください", whoaiName);
-      if(name) whoaiName = name;
-      showSpeech(`${whoaiName}「またあした。星を見ながら語ろう」`);
-      saveState();
-    }
-    // API 呼び出し例（存在すれば呼ぶ）
-    async function talkAPI(msg){
-      try{
-        if(window.talkApi) {
-          return await talkApi(msg);
-        }
-      } catch(e){}
-      return "いい一日でしたね。";
-    }
+document.getElementById('btnStart').onclick=()=>{whoaiWrap.style.display='block';say("キャラを選んでね");};
+document.getElementById('btnBegin').onclick=()=>{scene('beach');say("砂をよけて、貝を探してね");resizeSand();initDepth();};
+document.getElementById('btnNight').onclick=()=>{scene('night');say("また明日");openNight();};
 
-    // コントロール
-    document.getElementById("btnTitleStart").onclick = ()=>{document.getElementById("titleScreen").style.display="none"; showScene("bg-sunrise");};
-    document.getElementById("btnContinue").onclick = ()=>{ loadState(); document.getElementById("titleScreen").style.display="none"; showScene("bg-sunrise"); };
-    document.getElementById("btnStart").onclick = ()=>showScene("bg-beach");
-    document.getElementById("btnNight").onclick = ()=>{ showScene("bg-night"); askName(); };
-    document.getElementById("btnReset").onclick = ()=>{ resetState(); showSpeech("リセットしたよ",true); };
-
-    // 初期化
-    resizeSand(); loadState();
-  </script>
+function init(){scene('sunrise');say("おはよう。朝日がきれいだね");resizeSand();}
+addEventListener('resize',resizeSand);init();
+</script>
 </body>
 </html>
