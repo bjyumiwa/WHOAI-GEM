@@ -6,18 +6,27 @@
 <title>WHOAI Gem</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
-    font-family:system-ui,"Noto Sans JP",sans-serif;touch-action:none}
+    font-family:system-ui,"Noto Sans JP",sans-serif;touch-action:none;overscroll-behavior:none}
 
+  /* 背景 */
   .bg{position:fixed;inset:0;background-size:cover;background-position:center;
       opacity:0;transition:opacity .7s}
   .bg.show{opacity:1}
 
   /* キャラ */
-  #whoaiWrap{position:fixed;z-index:5;touch-action:none;display:none}
+  #whoaiWrap{
+    position:fixed;
+    left:10vw;              /* 初期位置（必須） */
+    bottom:12vh;            /* 初期位置（必須） */
+    z-index:5;
+    touch-action:none;
+    display:none;
+    transition:left 4s ease, bottom 4s ease;
+  }
   #whoai{width:clamp(80px,12vw,140px);user-select:none}
   .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);
           background:#fff;color:#111;border-radius:10px;padding:4px 8px;font-size:14px;
-          opacity:0;transition:.18s}
+          box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:.18s}
   .bubble.show{opacity:1;transform:translate(-50%,-12px)}
 
   /* バケツ */
@@ -33,54 +42,64 @@
   .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:clamp(48px,6vw,72px);
          transform:translate(-50%,-50%);
          background-size:contain;background-repeat:no-repeat;background-position:center;
-         cursor:grab;opacity:0;transition:opacity .18s}
+         cursor:grab;opacity:0;transition:opacity .18s, transform .18s}
   .shell.show{opacity:1}
+  .shell.drag{transform:translate(-50%,-50%) scale(1.04)}
 
   /* UI */
   #toast{position:fixed;right:10px;top:10px;z-index:10;
-         background:rgba(255,255,255,.9);color:#111;
-         padding:6px 12px;border-radius:8px;font-size:14px}
+         background:rgba(255,255,255,.92);color:#111;
+         padding:8px 12px;border-radius:10px;font-size:14px;min-width:180px}
   .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);
       display:flex;gap:8px;z-index:10}
-  .ui button{padding:6px 12px;border:none;border-radius:10px;cursor:pointer}
+  .ui button{padding:8px 14px;border:none;border-radius:10px;cursor:pointer}
 
   /* キャラ選択 */
   .panel{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.55);display:none;
          align-items:center;justify-content:center}
   .panel.show{display:flex}
-  .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,600px)}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px}
-  .choice{border:1px solid #eee;border-radius:12px;padding:8px;text-align:center;cursor:pointer}
+  .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,680px)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}
+  .choice{border:1px solid #eee;border-radius:12px;padding:8px;text-align:center;cursor:pointer;transition:transform .12s}
+  .choice:hover{transform:translateY(-2px)}
+  .choice img{max-width:100%;height:auto;display:block;margin:0 auto 6px}
 
-  /* 夜の会話 (LINE風) */
+  /* 夜の会話（LINE風） */
   #nightPanel .card{width:min(96svw,640px);max-height:90vh;display:flex;flex-direction:column}
   #chatLog{flex:1;background:#f2f2f2;padding:10px;border-radius:10px;overflow:auto}
   .msg{margin:6px 0;padding:8px 12px;border-radius:16px;max-width:70%}
-  .msg.me{background:#aef;color:#000;margin-left:auto}
-  .msg.ai{background:#fff;color:#000;margin-right:auto}
+  .msg.me{background:#aee1ff;color:#002; margin-left:auto}
+  .msg.ai{background:#fff;color:#000;   margin-right:auto}
   #chatCtrl{display:flex;gap:6px;margin-top:8px}
-  #chatInput{flex:1;padding:8px;border-radius:12px;border:1px solid #ccc}
-  #chatSend{padding:8px 14px;border:none;border-radius:12px;background:#4cafef;color:#fff;cursor:pointer}
+  #chatInput{flex:1;padding:10px;border-radius:12px;border:1px solid #ccc}
+  #chatSend{padding:10px 14px;border:none;border-radius:12px;background:#4cafef;color:#fff;cursor:pointer}
 </style>
 </head>
 <body>
+  <!-- 背景 -->
   <div id="bg-sunrise" class="bg" style="background-image:url('./public/bg/sunrise.jpg')"></div>
   <div id="bg-beach"   class="bg" style="background-image:url('./public/bg/beach_day.jpg')"></div>
   <div id="bg-night"   class="bg" style="background-image:url('./public/bg/night_beach.jpg')"></div>
 
+  <!-- キャラ -->
   <div id="whoaiWrap">
     <img id="whoai" src="" alt="whoai">
     <div id="bubble" class="bubble"></div>
   </div>
 
+  <!-- バケツ -->
   <div id="bucket">
     <img id="bucketImg" src="./public/bucket.png" alt="bucket">
     <div id="counter">0</div>
   </div>
 
+  <!-- 砂 -->
   <canvas id="sand"></canvas>
-  <div id="toast"></div>
 
+  <!-- 指示トースト（右上） -->
+  <div id="toast">おはよう。朝日がきれいだね</div>
+
+  <!-- 主要ボタン -->
   <div class="ui">
     <button id="btnStart">スタート</button>
     <button id="btnBegin">はじめに</button>
@@ -93,7 +112,9 @@
     <div class="card">
       <h2>キャラを選んでね</h2>
       <div id="charGrid" class="grid"></div>
-      <button onclick="closeCharPanel()">閉じる</button>
+      <div style="text-align:right;margin-top:8px">
+        <button onclick="closeCharPanel()">閉じる</button>
+      </div>
     </div>
   </div>
 
@@ -106,118 +127,294 @@
         <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
         <button id="chatSend">送信</button>
       </div>
-      <button onclick="closeNight()">閉じる</button>
+      <div style="text-align:right;margin-top:8px">
+        <button onclick="closeNight()">閉じる</button>
+      </div>
     </div>
   </div>
 
+<!-- WHOAIの会話APIラッパ -->
 <script src="./api/talk.js"></script>
 <script>
-const toast=document.getElementById('toast');
-const say=(s)=>toast.textContent=s;
-const bg={sunrise:document.getElementById('bg-sunrise'),
-          beach:document.getElementById('bg-beach'),
-          night:document.getElementById('bg-night')};
-let currentScene='sunrise';
-function scene(name){Object.values(bg).forEach(e=>e.classList.remove('show'));
-  bg[name].classList.add('show');currentScene=name;}
+/* ========== 共通UI ========== */
+const toast = document.getElementById('toast');
+const say = (s)=>{ toast.textContent = s; };
 
-const whoaiWrap=document.getElementById('whoaiWrap');
-const whoai=document.getElementById('whoai');
-const bubble=document.getElementById('bubble');
-function showBubble(text){bubble.textContent=text;
-  bubble.classList.add('show');setTimeout(()=>bubble.classList.remove('show'),1200);}
-
-const bucket=document.getElementById('bucket');
-const counter=document.getElementById('counter');let count=0;
-
-/* 砂キャンバス */
-const sand=document.getElementById('sand');
-const ctx=sand.getContext('2d',{willReadFrequently:true});
-const TILE=90,BRUSH=28;
-function resizeSand(){sand.width=innerWidth;sand.height=innerHeight;
-  const g=ctx.createLinearGradient(0,0,0,sand.height);
-  g.addColorStop(0,'#e7d9b7');g.addColorStop(1,'#c8b68f');
-  ctx.fillStyle=g;ctx.fillRect(0,0,sand.width,sand.height);}
-function brushAt(x,y){ctx.globalCompositeOperation='destination-out';
-  ctx.globalAlpha=0.4;ctx.beginPath();ctx.arc(x,y,BRUSH,0,Math.PI*2);ctx.fill();
-  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';maybeSpawnNear(x,y);}
-sand.addEventListener('pointerdown',e=>{if(currentScene==='beach')brushAt(e.clientX,e.clientY);});
-sand.addEventListener('pointermove',e=>{if(currentScene==='beach'&&e.buttons)brushAt(e.clientX,e.clientY);});
-
-/* 貝 */
-const COMMON=['./public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'];
-const RARE=['./public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'];
-function maybeSpawnNear(x,y){
-  if(Math.random()>0.2)return;
-  const pool=Math.random()<0.8?COMMON:RARE;
-  const src=pool[Math.floor(Math.random()*pool.length)];
-  const el=document.createElement('div');el.className='shell';
-  el.style.left=x+'px';el.style.top=y+'px';el.style.backgroundImage=`url(${src})`;
-  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('show'));
-  enableShellDrag(el,src);
+const bg = {
+  sunrise: document.getElementById('bg-sunrise'),
+  beach  : document.getElementById('bg-beach'),
+  night  : document.getElementById('bg-night'),
+};
+let currentScene = 'sunrise';
+function scene(name){
+  Object.values(bg).forEach(e=>e.classList.remove('show'));
+  bg[name].classList.add('show');
+  currentScene = name;
 }
-function enableShellDrag(el,src){
-  let pid=null;
-  el.addEventListener('pointerdown',e=>{pid=e.pointerId;el.setPointerCapture(pid);},{passive:false});
-  el.addEventListener('pointermove',e=>{
-    if(e.pointerId!==pid)return;
-    el.style.left=e.clientX+'px';el.style.top=e.clientY+'px';},{passive:false});
-  el.addEventListener('pointerup',e=>{
-    if(e.pointerId!==pid)return;pid=null;
-    const b=bucket.getBoundingClientRect(),s=el.getBoundingClientRect();
-    if(!(s.right<b.left||s.left>b.right||s.bottom<b.top||s.top>b.bottom)){
-      el.remove();counter.textContent=++count;
-      showBubble(Math.random()<0.2?"レアだよ！":"やったね！");
-      if(count===10)showBubble("マカロンゲット！");
-    }},{passive:false});
+
+/* ========== キャラ関連 ========== */
+const whoaiWrap = document.getElementById('whoaiWrap');
+const whoai     = document.getElementById('whoai');
+const bubble    = document.getElementById('bubble');
+
+function showBubble(text){
+  bubble.textContent = text;
+  bubble.classList.add('show');
+  setTimeout(()=>bubble.classList.remove('show'), 1200);
 }
 
 /* キャラ選択 */
-const CHAR_LIST=['blue_closed.png','green_open.png','orange_closed.png','pink_closed.png',
-  'purple_closed.png','tane_green.png','tane_pink.png','tane_purple.png','tane_blue.png']
-  .map(n=>`./assets/stage1/${n}`);
-const charPanel=document.getElementById('charPanel');
-const charGrid=document.getElementById('charGrid');
+const CHAR_LIST = [
+  'blue_closed.png','green_open.png','orange_closed.png','pink_closed.png','purple_closed.png',
+  'tane_green.png','tane_pink.png','tane_purple.png','tane_blue.png'
+].map(n=>`./assets/stage1/${n}`);
+
+const charPanel = document.getElementById('charPanel');
+const charGrid  = document.getElementById('charGrid');
+
 function openCharPanel(){
   if(!charGrid.dataset.ready){
     CHAR_LIST.forEach(src=>{
-      const div=document.createElement('div');div.className='choice';
-      div.innerHTML=`<img src="${src}" alt=""><div>${src.split('/').pop().replace('.png','')}</div>`;
-      div.onclick=()=>{whoai.src=src;whoaiWrap.style.display='block';closeCharPanel();showBubble("おはよう");};
+      const div = document.createElement('div');
+      div.className = 'choice';
+      div.innerHTML = `<img src="${src}" alt=""><div>${src.split('/').pop().replace('.png','')}</div>`;
+      div.onclick = ()=>{
+        whoai.src = src;
+
+        // ここが重要：確実に画面内に出す（位置を明示＆表示）
+        whoaiWrap.style.display = 'block';
+        whoaiWrap.style.left    = '10vw';
+        whoaiWrap.style.bottom  = '12vh';
+        whoaiWrap.style.top     = 'auto';
+
+        closeCharPanel();
+        showBubble('おはよう！');
+        say('キャラを選んだよ。はじめに → 砂をよけてみよう');
+      };
       charGrid.appendChild(div);
     });
-    charGrid.dataset.ready='1';
+    charGrid.dataset.ready = '1';
   }
   charPanel.classList.add('show');
 }
-function closeCharPanel(){charPanel.classList.remove('show');}
+function closeCharPanel(){ charPanel.classList.remove('show'); }
 
-/* 夜シーン */
-const nightPanel=document.getElementById('nightPanel');
-const chatLog=document.getElementById('chatLog');
-const chatInput=document.getElementById('chatInput');
-const chatSend=document.getElementById('chatSend');
-function openNight(){nightPanel.classList.add('show');}
-function closeNight(){nightPanel.classList.remove('show');}
+/* 穏やかにランダム移動（砂探しっぽく） */
+function wander(){
+  setInterval(()=>{
+    // 画面の 8〜80vw、10〜70vh をランダム移動
+    whoaiWrap.style.left   = (8 + Math.random()*72) + 'vw';
+    whoaiWrap.style.bottom = (10 + Math.random()*60) + 'vh';
+  }, 5000);
+}
+
+/* ========== 砂キャンバス ========== */
+const sand = document.getElementById('sand');
+const ctx  = sand.getContext('2d', { willReadFrequently:true });
+
+function resizeSand(){
+  sand.width = innerWidth; sand.height = innerHeight;
+
+  // 砂のベース（グラデ＋ノイズっぽい斑）
+  const g = ctx.createLinearGradient(0,0,0,sand.height);
+  g.addColorStop(0, '#e7d9b7');
+  g.addColorStop(1, '#c8b68f');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,sand.width,sand.height);
+
+  // 砂粒っぽい模様を軽く
+  ctx.globalAlpha = 0.12;
+  for(let i=0;i<800;i++){
+    const x = Math.random()*sand.width;
+    const y = Math.random()*sand.height;
+    ctx.fillStyle = (i%3===0)?'#bfae82':'#d2c29a';
+    ctx.beginPath(); ctx.arc(x,y,Math.random()*1.2+0.2,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+const BRUSH = 30;
+function brushAt(x,y){
+  // destination-out で「削る」表現。アルファを弱めて自然に
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath(); ctx.arc(x,y,BRUSH,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 削った地点の近くに確率で出現
+  maybeSpawnNear(x,y);
+}
+
+sand.addEventListener('pointerdown', e=>{
+  if(currentScene!=='beach') return;
+  brushAt(e.clientX, e.clientY);
+});
+sand.addEventListener('pointermove', e=>{
+  if(currentScene!=='beach' || e.buttons===0) return;
+  brushAt(e.clientX, e.clientY);
+});
+
+/* ========== 貝の出現＆ドラッグ ========== */
+const COMMON = [
+  './public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'
+];
+const RARE = [
+  './public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'
+];
+
+const bucket  = document.getElementById('bucket');
+const counter = document.getElementById('counter');
+let count = 0;
+
+const shells = [];
+const MAX_SHELLS = 10;
+const MIN_DIST   = 90;
+const SPAWN_P    = 0.28;
+
+function tooClose(x,y){ return shells.some(s=>Math.hypot(s.x-x,s.y-y)<MIN_DIST); }
+function avoidBucket(x,y){
+  const b=bucket.getBoundingClientRect();
+  const cx=(b.left+b.right)/2, cy=(b.top+b.bottom)/2;
+  return Math.hypot(cx-x,cy-y)<120;
+}
+
+function maybeSpawnNear(x,y){
+  if(shells.length>=MAX_SHELLS) return;
+  if(Math.random()>SPAWN_P) return;
+
+  // 砂の中に散らばるよう、少しずらす
+  let px = x + (Math.random()*2-1)*90;
+  let py = y + (Math.random()*2-1)*90;
+  px = Math.max(60, Math.min(innerWidth -60, px));
+  py = Math.max(100, Math.min(innerHeight-100, py));
+  if(tooClose(px,py) || avoidBucket(px,py)) return;
+
+  const pool = Math.random()<0.82 ? COMMON : RARE;
+  const src  = pool[Math.floor(Math.random()*pool.length)];
+
+  const el = document.createElement('div');
+  el.className = 'shell';
+  el.style.left = px + 'px';
+  el.style.top  = py + 'px';
+  el.style.backgroundImage = `url(${src})`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  enableShellDrag(el, src);
+  shells.push({el,x:px,y:py});
+}
+
+function enableShellDrag(el, src){
+  let pid=null, dx=0, dy=0;
+
+  el.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    pid = e.pointerId;
+    el.setPointerCapture(pid);
+    dx = e.clientX - parseFloat(el.style.left);
+    dy = e.clientY - parseFloat(el.style.top);
+    el.classList.add('drag');
+  }, {passive:false});
+
+  el.addEventListener('pointermove', e=>{
+    if(e.pointerId!==pid) return;
+    e.preventDefault();
+    el.style.left = (e.clientX - dx) + 'px';
+    el.style.top  = (e.clientY - dy) + 'px';
+  }, {passive:false});
+
+  function finish(e){
+    if(e.pointerId!==pid) return;
+    e.preventDefault();
+    el.classList.remove('drag');
+    el.releasePointerCapture(pid);
+    pid=null;
+
+    const b=bucket.getBoundingClientRect();
+    const s=el.getBoundingClientRect();
+    const hit = !(s.right<b.left || s.left>b.right || s.bottom<b.top || s.top>b.bottom);
+    if(hit){
+      el.remove();
+      const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1);
+      counter.textContent = ++count;
+      showBubble( Math.random()<0.2 ? 'レアだよ！' : 'やったね！' );
+    }
+  }
+  el.addEventListener('pointerup', finish,   {passive:false});
+  el.addEventListener('pointercancel', finish,{passive:false});
+}
+
+/* ========== 夜：LINE風チャット（api/talk.js使用） ========== */
+const nightPanel = document.getElementById('nightPanel');
+const chatLog    = document.getElementById('chatLog');
+const chatInput  = document.getElementById('chatInput');
+const chatSend   = document.getElementById('chatSend');
+
+function openNight(){
+  nightPanel.classList.add('show');
+  addMsg('ai','夜空がきれいだね。今日はどんな一日だった？');
+}
+function closeNight(){ nightPanel.classList.remove('show'); }
 function addMsg(role,text){
-  const div=document.createElement('div');div.className='msg '+role;div.textContent=text;
-  chatLog.appendChild(div);chatLog.scrollTop=chatLog.scrollHeight;}
-chatSend.onclick=async()=>{
-  const text=chatInput.value.trim();if(!text)return;
-  addMsg('me',text);chatInput.value='';
-  try{const {reply}=await WHOAI_TALK.talk(text,{state:{totalCollected:count}});
-    addMsg('ai',reply);}catch(e){addMsg('ai','（接続できませんでした）');}
+  const div=document.createElement('div');
+  div.className='msg '+(role==='user'?'me':'ai');
+  div.textContent=text;
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+chatSend.onclick = async ()=>{
+  const text = chatInput.value.trim(); if(!text) return;
+  addMsg('user', text); chatInput.value='';
+
+  try{
+    const { reply } = await WHOAI_TALK.talk(text, { state:{ totalCollected:count } });
+    addMsg('ai', reply || '…');
+  }catch(e){
+    addMsg('ai','（接続できませんでした）');
+    console.error(e);
+  }
 };
 
-/* ボタン */
-document.getElementById('btnStart').onclick=()=>{openCharPanel();};
-document.getElementById('btnBegin').onclick=()=>{scene('beach');say("砂をよけて、貝を探してね");resizeSand();};
-document.getElementById('btnNight').onclick=()=>{scene('night');say("また明日");openNight();};
-document.getElementById('btnReset').onclick=()=>{localStorage.clear();location.reload();};
+/* ========== ボタンとシーン遷移 ========== */
+document.getElementById('btnStart').onclick = ()=>{
+  openCharPanel();
+  say('キャラを選んでね');
+};
+document.getElementById('btnBegin').onclick = ()=>{
+  scene('beach');
+  say('砂の中に貝があるよ。なでて探してね');
+  resizeSand();
+  // キャラが画面内でゆっくり動く（探索している雰囲気）
+  if(whoaiWrap.style.display!=='block'){
+    // まだ選ばれていない場合は、仮に緑を出す
+    whoai.src = './assets/stage1/green_open.png';
+    whoaiWrap.style.display='block';
+    whoaiWrap.style.left='10vw';
+    whoaiWrap.style.bottom='12vh';
+  }
+  wander();
+};
+document.getElementById('btnNight').onclick = ()=>{
+  scene('night');
+  say('夜の海。話そうか？');
+  openNight();
+};
+document.getElementById('btnReset').onclick = ()=>{
+  // シンプルな初期化
+  count = 0; counter.textContent = 0;
+  document.querySelectorAll('.shell').forEach(e=>e.remove());
+  resizeSand();
+  say('リセットしたよ');
+};
 
-/* 初期化 */
-function init(){scene('sunrise');say("おはよう。朝日がきれいだね");resizeSand();}
-addEventListener('resize',resizeSand);init();
+/* ========== 初期化 ========== */
+function init(){
+  scene('sunrise');
+  say('おはよう。朝日がきれいだね');
+  resizeSand();
+}
+addEventListener('resize', resizeSand);
+init();
 </script>
 </body>
 </html>
