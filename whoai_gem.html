@@ -27,13 +27,22 @@
     .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);background:rgba(255,255,255,.78);backdrop-filter:blur(2px);color:#111;border-radius:10px;padding:4px 8px;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:.18s;white-space:nowrap}
     .bubble.show{opacity:1;transform:translate(-50%,-12px)}
 
-    /* アクセサリー（毛糸帽サイズを基準に統一・小さめ） */
-    .acc{position:absolute;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:2}
-    .acc.knit_hat{top:10%;width:28%}        /* 基準サイズ */
-    .acc.straw_hat{top:6%;width:30%}
-    .acc.sunglasses{top:38%;width:28%}
-    .acc.ribbon_yellow{top:15%;left:60%;width:16%}
-    .acc.star_yellow{top:20%;left:65%;width:14%}
+  
+/* アクセサリー（毛糸帽を基準。全体的にひと回りUP） */
+.acc{
+  position:absolute;
+  left:50%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  z-index:2;
+}
+
+/* ★ここを調整：前より大きめ＆少し下げすぎない配置 */
+.acc.knit_hat{       top:9%;  width:34%; }   /* 28% → 34%（+約20%） */
+.acc.straw_hat{     top:5%;  width:36%; }   /* 30% → 36% */
+.acc.sunglasses{    top:38%; width:32%; }   /* 28% → 32% */
+.acc.ribbon_yellow{ top:14%; left:60%; width:18%; } /* 16% → 18% */
+.acc.star_yellow{   top:19%; left:65%; width:16%; } /* 14% → 16% */
 
     /* バケツ（ビーチのみ表示） */
     #bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(74px,14vw,160px);display:none}
