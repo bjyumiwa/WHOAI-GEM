@@ -9,7 +9,7 @@ ASSET LIST (put these under ./public/):
   asari1.png, asari2.png, asari3.png,
   aurora_shell.png, rare_pearl.png, rare_rainbow.png
 - accessories/
-  hat01.png, ribbon_red.png, sunglasses.png, star_hairpin.png
+  straw_hat.png, knit_hat.png, sunglasses.png, ribbon_yellow.png, star_yellow.png
 - bucket.png
 
 DEPENDENCY:
@@ -37,17 +37,15 @@ DEPENDENCY:
   .heroBtns button{padding:12px 18px;border:none;border-radius:12px;cursor:pointer;font-weight:700}
 
   /* キャラ */
-  #whoaiWrap{
-    position:fixed;left:10vw;bottom:12vh;z-index:5;touch-action:none;display:none;
-    transition:left 4s ease, bottom 4s ease;
-  }
+  #whoaiWrap{position:fixed;left:10vw;bottom:12vh;z-index:5;touch-action:none;display:none;transition:left 4s ease, bottom 4s ease}
   #whoai{width:clamp(80px,12vw,140px);user-select:none;display:block}
   #accLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-  .acc{position:absolute;left:50%;top:18%;transform:translate(-50%,-50%) scale(1);
-       width:60%;image-rendering:auto;z-index:2;opacity:1;filter:none}
+  .acc{position:absolute;left:50%;top:18%;transform:translate(-50%,-50%) scale(1);width:60%;image-rendering:auto;z-index:2;opacity:1}
   .acc.sunglasses{top:38%;width:54%}
-  .acc.ribbon_red{top:14%;left:60%;width:32%}
-  .acc.star_hairpin{top:20%;left:65%;width:18%}
+  .acc.ribbon_yellow{top:14%;left:60%;width:32%}
+  .acc.star_yellow{top:20%;left:65%;width:18%}
+  .acc.straw_hat{top:10%;width:90%}
+  .acc.knit_hat{top:18%;width:80%}
 
   .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);
           background:rgba(255,255,255,.78);backdrop-filter:blur(2px);
@@ -78,15 +76,14 @@ DEPENDENCY:
          background:rgba(255,255,255,.92);color:#111;
          padding:8px 12px;border-radius:10px;font-size:14px;min-width:180px}
 
-  /* 主要ボタン（ゲーム中のみフッターに表示） */
+  /* ゲーム中ボタン（フッター） */
   .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);
       display:none;gap:8px;z-index:10;flex-wrap:wrap;justify-content:center}
   .ui.show{display:flex}
   .ui button{padding:8px 14px;border:none;border-radius:10px;cursor:pointer}
 
   /* パネル（共通） */
-  .panel{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.55);display:none;
-         align-items:center;justify-content:center}
+  .panel{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center}
   .panel.show{display:flex}
   .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,720px)}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}
@@ -222,7 +219,6 @@ function scene(name){
   (bg[name]||bg.sunrise).classList.add('show');
   currentScene = name;
   store.set('whoai.lastScene', currentScene);
-  // 砂の表示切り替え
   if(name==='beach'){ sand.classList.add('show'); resizeSand(); }
   else{ sand.classList.remove('show'); }
 }
@@ -238,10 +234,11 @@ const store = {
 ============================= */
 const hero      = $('#hero');
 const gameUi    = $('#gameUi');
-$('#btnHeroStart').onclick = ()=>{ openCharPanel(); };
-$('#btnHeroContinue').onclick = ()=>{
-  continueGame();
+$('#btnHeroStart').onclick = ()=>{ // スタート→キャラ選択→自動でビーチ
+  openCharPanel();
+  say('キャラを選んでね');
 };
+$('#btnHeroContinue').onclick = ()=>{ continueGame(); };
 
 function startGameWithChar(src){
   selectChar(src);
@@ -253,8 +250,8 @@ function startGameWithChar(src){
 
 function continueGame(){
   const savedChar = store.get('whoai.char', null);
-  if(!savedChar){ openCharPanel(); return; }
-  whoai.src = savedChar; whoaiWrap.style.display='block'; ensureWander(); restoreAccessories();
+  const useChar = savedChar || './public/assets/stage1/green_open.png';
+  whoai.src = useChar; whoaiWrap.style.display='block'; ensureWander(); restoreAccessories();
   hero.style.display='none'; gameUi.classList.add('show');
   const last = store.get('whoai.lastScene','beach');
   if(last==='night'){ scene('night'); openNight(); say('夜の海。話そうか？'); }
@@ -269,11 +266,7 @@ const whoai     = $('#whoai');
 const accLayer  = $('#accLayer');
 const bubble    = $('#bubble');
 
-function showBubble(text){
-  bubble.textContent = text;
-  bubble.classList.add('show');
-  setTimeout(()=>bubble.classList.remove('show'), 1300);
-}
+function showBubble(text){ bubble.textContent = text; bubble.classList.add('show'); setTimeout(()=>bubble.classList.remove('show'), 1300); }
 
 // キャラ選択
 const CHAR_LIST = [
@@ -315,10 +308,11 @@ function selectChar(src){
    アクセサリー
 ============================= */
 const ACCESSORIES = [
-  {key:'hat01',       name:'ハット',       src:'./public/accessories/hat01.png',       cls:''},
-  {key:'ribbon_red',  name:'リボン（赤）', src:'./public/accessories/ribbon_red.png',  cls:'ribbon_red'},
-  {key:'sunglasses',  name:'サングラス',   src:'./public/accessories/sunglasses.png',  cls:'sunglasses'},
-  {key:'star_hairpin',name:'スター',       src:'./public/accessories/star_hairpin.png',cls:'star_hairpin'},
+  {key:'straw_hat',    name:'麦わら帽子',     src:'./public/accessories/straw_hat.png',    cls:'straw_hat'},
+  {key:'knit_hat',     name:'毛糸の帽子',     src:'./public/accessories/knit_hat.png',     cls:'knit_hat'},
+  {key:'sunglasses',   name:'サングラス',     src:'./public/accessories/sunglasses.png',   cls:'sunglasses'},
+  {key:'ribbon_yellow',name:'黄色いリボン',   src:'./public/accessories/ribbon_yellow.png',cls:'ribbon_yellow'},
+  {key:'star_yellow',  name:'黄色のスター',   src:'./public/accessories/star_yellow.png',  cls:'star_yellow'},
 ];
 
 const accessoryPanel = $('#accessoryPanel');
@@ -343,37 +337,19 @@ function openAccessory(){
     });
     accList.dataset.ready='1';
   }
-  // 既存装着を反映
   const active = new Set(store.get('whoai.accessories', []));
-  $$('.accChoice', accList).forEach(div=>{
-    const on = active.has(div.dataset.key);
-    div.querySelector('input').checked = on;
-  });
+  $$('.accChoice', accList).forEach(div=>{ div.querySelector('input').checked = active.has(div.dataset.key); });
   openPanel(accessoryPanel);
 }
 
 function toggleAccessory(a, on){
   const active = new Set(store.get('whoai.accessories', []));
-  if(on){ active.add(a.key); addAccImg(a); }
-  else { active.delete(a.key); removeAccImg(a.key); }
+  if(on){ active.add(a.key); addAccImg(a); } else { active.delete(a.key); removeAccImg(a.key); }
   store.set('whoai.accessories', Array.from(active));
 }
-
-function addAccImg(a){
-  removeAccImg(a.key);
-  const img = document.createElement('img');
-  img.src = a.src; img.alt = a.name; img.className = 'acc '+(a.cls||'');
-  img.dataset.key = a.key;
-  accLayer.appendChild(img);
-}
-function removeAccImg(key){
-  const el = accLayer.querySelector(`.acc[data-key="${key}"]`);
-  if(el) el.remove();
-}
-function restoreAccessories(){
-  const active = store.get('whoai.accessories', []);
-  ACCESSORIES.forEach(a=>{ if(active.includes(a.key)) addAccImg(a); });
-}
+function addAccImg(a){ removeAccImg(a.key); const img=document.createElement('img'); img.src=a.src; img.alt=a.name; img.className='acc '+(a.cls||''); img.dataset.key=a.key; accLayer.appendChild(img); }
+function removeAccImg(key){ const el=accLayer.querySelector(`.acc[data-key="${key}"]`); if(el) el.remove(); }
+function restoreAccessories(){ const active=store.get('whoai.accessories', []); ACCESSORIES.forEach(a=>{ if(active.includes(a.key)) addAccImg(a); }); }
 
 /* =============================
    砂キャンバス/貝（総出現上限20）
@@ -384,8 +360,7 @@ const ctx  = sand.getContext('2d', { willReadFrequently:true });
 function resizeSand(){
   sand.width = innerWidth; sand.height = innerHeight;
   const g = ctx.createLinearGradient(0,0,0,sand.height);
-  g.addColorStop(0, '#e7d9b7');
-  g.addColorStop(1, '#c8b68f');
+  g.addColorStop(0, '#e7d9b7'); g.addColorStop(1, '#c8b68f');
   ctx.fillStyle = g; ctx.fillRect(0,0,sand.width,sand.height);
   ctx.globalAlpha = 0.12;
   for(let i=0;i<800;i++){
@@ -408,12 +383,8 @@ function brushAt(x,y){
 sand.addEventListener('pointerdown', e=>{ if(currentScene==='beach'){ brushAt(e.clientX, e.clientY); } }, {passive:false});
 sand.addEventListener('pointermove', e=>{ if(currentScene==='beach' && e.buttons){ brushAt(e.clientX, e.clientY); } }, {passive:false});
 
-const COMMON = [
-  './public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'
-];
-const RARE = [
-  './public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'
-];
+const COMMON = ['./public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'];
+const RARE   = ['./public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'];
 
 const bucket  = document.getElementById('bucket');
 const counter = document.getElementById('counter');
@@ -422,70 +393,34 @@ let spawnedTotal = 0;          // 生成した総数（未回収含む）
 
 const shells = [];
 const MAX_SHELLS = 8;          // 同時表示は控えめ
-const TOTAL_SPAWN_LIMIT = 20;  // 総出現上限（ご要望）
+const TOTAL_SPAWN_LIMIT = 20;  // 総出現上限
 const MIN_DIST   = 90;
-const SPAWN_P    = 0.18;       // 出現確率も少し控えめ
+const SPAWN_P    = 0.18;       // 控えめ
 
 function tooClose(x,y){ return shells.some(s=>Math.hypot(s.x-x,s.y-y)<MIN_DIST); }
-function avoidBucket(x,y){
-  const b=bucket.getBoundingClientRect();
-  const cx=(b.left+b.right)/2, cy=(b.top+b.bottom)/2;
-  return Math.hypot(cx-x,cy-y)<120;
-}
+function avoidBucket(x,y){ const b=bucket.getBoundingClientRect(); const cx=(b.left+b.right)/2, cy=(b.top+b.bottom)/2; return Math.hypot(cx-x,cy-y)<120; }
 
 function maybeSpawnNear(x,y){
   if(shells.length>=MAX_SHELLS) return;
   if(spawnedTotal>=TOTAL_SPAWN_LIMIT) return;
   if(Math.random()>SPAWN_P) return;
-  let px = x + (Math.random()*2-1)*90;
-  let py = y + (Math.random()*2-1)*90;
-  px = Math.max(60, Math.min(innerWidth -60, px));
-  py = Math.max(100, Math.min(innerHeight-100, py));
+  let px = x + (Math.random()*2-1)*90; let py = y + (Math.random()*2-1)*90;
+  px = Math.max(60, Math.min(innerWidth -60, px)); py = Math.max(100, Math.min(innerHeight-100, py));
   if(tooClose(px,py) || avoidBucket(px,py)) return;
-
-  const rare = Math.random()<0.18;
-  const src  = (rare?RARE:COMMON)[Math.floor(Math.random()*(rare?RARE.length:COMMON.length))];
+  const rare = Math.random()<0.18; const src = (rare?RARE:COMMON)[Math.floor(Math.random()*(rare?RARE.length:COMMON.length))];
   const key  = src.split('/').pop().replace('.png','');
-
-  const el = document.createElement('div');
-  el.className = 'shell'; el.style.left = px + 'px'; el.style.top = py + 'px';
-  el.style.backgroundImage = `url(${src})`;
-  document.body.appendChild(el);
-  requestAnimationFrame(()=>el.classList.add('show'));
-  enableShellDrag(el, key);
-  shells.push({el,x:px,y:py,key});
-  spawnedTotal++; store.set('whoai.spawned', spawnedTotal);
+  const el = document.createElement('div'); el.className='shell'; el.style.left=px+'px'; el.style.top=py+'px'; el.style.backgroundImage=`url(${src})`;
+  document.body.appendChild(el); requestAnimationFrame(()=>el.classList.add('show'));
+  enableShellDrag(el, key); shells.push({el,x:px,y:py,key}); spawnedTotal++; store.set('whoai.spawned', spawnedTotal);
 }
 
 function enableShellDrag(el, key){
   let pid=null, dx=0, dy=0;
-  el.addEventListener('pointerdown', e=>{
-    e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid);
-    dx = e.clientX - parseFloat(el.style.left); dy = e.clientY - parseFloat(el.style.top);
-    el.classList.add('drag');
-  }, {passive:false});
-
-  el.addEventListener('pointermove', e=>{
-    if(e.pointerId!==pid) return; e.preventDefault();
-    el.style.left = (e.clientX - dx) + 'px'; el.style.top  = (e.clientY - dy) + 'px';
-  }, {passive:false});
-
-  function finish(e){
-    if(e.pointerId!==pid) return; e.preventDefault();
-    el.classList.remove('drag'); el.releasePointerCapture(pid); pid=null;
-    const b=bucket.getBoundingClientRect(); const s=el.getBoundingClientRect();
-    const hit = !(s.right<b.left || s.left>b.right || s.bottom<b.top || s.top>b.bottom);
-    if(hit){
-      el.remove();
-      const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1);
-      counter.textContent = ++count; persistCount();
-      updateCollection(key, 1);
-      showBubble( Math.random()<0.2 ? 'レアだよ！' : 'やったね！' );
-      refreshCollectionView();
-    }
-  }
-  el.addEventListener('pointerup', finish,   {passive:false});
-  el.addEventListener('pointercancel', finish,{passive:false});
+  el.addEventListener('pointerdown', e=>{ e.preventDefault(); pid=e.pointerId; el.setPointerCapture(pid); dx=e.clientX-parseFloat(el.style.left); dy=e.clientY-parseFloat(el.style.top); el.classList.add('drag'); }, {passive:false});
+  el.addEventListener('pointermove', e=>{ if(e.pointerId!==pid) return; e.preventDefault(); el.style.left=(e.clientX-dx)+'px'; el.style.top=(e.clientY-dy)+'px'; }, {passive:false});
+  function finish(e){ if(e.pointerId!==pid) return; e.preventDefault(); el.classList.remove('drag'); el.releasePointerCapture(pid); pid=null; const b=bucket.getBoundingClientRect(); const s=el.getBoundingClientRect(); const hit = !(s.right<b.left || s.left>b.right || s.bottom<b.top || s.top>b.bottom); if(hit){ el.remove(); const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1); counter.textContent = ++count; persistCount(); updateCollection(key, 1); showBubble( Math.random()<0.2 ? 'レアだよ！' : 'やったね！' ); refreshCollectionView(); } }
+  el.addEventListener('pointerup', finish, {passive:false});
+  el.addEventListener('pointercancel', finish, {passive:false});
 }
 
 /* =============================
@@ -501,56 +436,22 @@ const ALL_ITEMS = [...COMMON, ...RARE].map(src=>({ key:src.split('/').pop().repl
 
 function getCollection(){ return store.get('whoai.collection', {}); }
 function setCollection(obj){ store.set('whoai.collection', obj); }
-function updateCollection(key, delta){
-  const col = getCollection(); col[key] = (col[key]||0) + (delta||0); if(col[key]<0) col[key]=0; setCollection(col);
-}
+function updateCollection(key, delta){ const col=getCollection(); col[key]=(col[key]||0)+(delta||0); if(col[key]<0) col[key]=0; setCollection(col); }
 function totalCollected(){ return Object.values(getCollection()).reduce((a,b)=>a+b,0); }
 
 function buildCollectionGrid(){
-  // Common
-  colCommon.innerHTML='';
-  COMMON.forEach(src=>{
-    const key = src.split('/').pop().replace('.png','');
-    const slot = document.createElement('div'); slot.className='slot';
-    slot.innerHTML = `
-      <div class="thumb" style="background-image:url(${src})"></div>
-      <div class="name">${key}</div>
-      <div class="count">×<span data-key="${key}">0</span></div>`;
-    colCommon.appendChild(slot);
-  });
-  // Rare
-  colRare.innerHTML='';
-  RARE.forEach(src=>{
-    const key = src.split('/').pop().replace('.png','');
-    const slot = document.createElement('div'); slot.className='slot';
-    slot.innerHTML = `
-      <div class="thumb" style="background-image:url(${src})"></div>
-      <div class="name">${key}</div>
-      <div class="count">×<span data-key="${key}">0</span></div>`;
-    colRare.appendChild(slot);
-  });
+  colCommon.innerHTML=''; COMMON.forEach(src=>{ const key=src.split('/').pop().replace('.png',''); const slot=document.createElement('div'); slot.className='slot'; slot.innerHTML=`<div class="thumb" style="background-image:url(${src})"></div><div class="name">${key}</div><div class="count">×<span data-key="${key}">0</span></div>`; colCommon.appendChild(slot); });
+  colRare.innerHTML='';   RARE.forEach(src=>{ const key=src.split('/').pop().replace('.png',''); const slot=document.createElement('div'); slot.className='slot'; slot.innerHTML=`<div class="thumb" style="background-image:url(${src})"></div><div class="name">${key}</div><div class="count">×<span data-key="${key}">0</span></div>`; colRare.appendChild(slot); });
 }
 
 function refreshCollectionView(){
   const col = getCollection();
-  const totalKinds = ALL_ITEMS.length;
-  const ownedKinds = ALL_ITEMS.filter(x=> (col[x.key]||0)>0 ).length;
-  const total = totalCollected();
+  const totalKinds = ALL_ITEMS.length; const ownedKinds = ALL_ITEMS.filter(x=> (col[x.key]||0)>0 ).length; const total = totalCollected();
   collectionSummary.textContent = `入手種: ${ownedKinds}/${totalKinds}　総数: ${total}　コンプ率: ${Math.round(ownedKinds/totalKinds*100)}%`;
-  $$('#collectionPanel .slot').forEach(slot=>{
-    const span = slot.querySelector('.count span');
-    const key = span && span.getAttribute('data-key');
-    const c = (col[key]||0);
-    span.textContent = c;
-    slot.classList.toggle('has', c>0);
-  });
+  $$('#collectionPanel .slot').forEach(slot=>{ const span=slot.querySelector('.count span'); const key=span && span.getAttribute('data-key'); const c=(col[key]||0); span.textContent=c; slot.classList.toggle('has', c>0); });
 }
 
-function openCollection(){
-  if(!colCommon.dataset.ready){ buildCollectionGrid(); colCommon.dataset.ready='1'; }
-  refreshCollectionView();
-  openPanel(collectionPanel);
-}
+function openCollection(){ if(!colCommon.dataset.ready){ buildCollectionGrid(); colCommon.dataset.ready='1'; } refreshCollectionView(); openPanel(collectionPanel); }
 
 /* =============================
    夜：LINE風チャット（半透明バルーン）
@@ -561,29 +462,9 @@ const chatInput  = $('#chatInput');
 const chatSend   = $('#chatSend');
 $('#nightClose').onclick = ()=> closePanel(nightPanel);
 
-function addMsg(role,text){
-  const div=document.createElement('div');
-  div.className='msg '+(role==='user'?'me':'ai');
-  div.textContent=text; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight;
-}
-
-function openNight(){
-  openPanel(nightPanel);
-  if(!chatLog.dataset.greet){ addMsg('ai','夜空がきれいだね。今日はどんな一日だった？'); chatLog.dataset.greet='1'; }
-}
-
-chatSend.onclick = async ()=>{
-  const text = chatInput.value.trim(); if(!text) return;
-  addMsg('user', text); chatInput.value='';
-  try{
-    if (window.WHOAI_TALK && WHOAI_TALK.talk) {
-      const { reply } = await WHOAI_TALK.talk(text, { state:{ totalCollected:count } });
-      addMsg('ai', reply || '…');
-    } else {
-      addMsg('ai', `（ローカル）${text}。夜風が気持ちいいね。`);
-    }
-  }catch(e){ addMsg('ai','（接続できませんでした）'); console.error(e); }
-};
+function addMsg(role,text){ const div=document.createElement('div'); div.className='msg '+(role==='user'?'me':'ai'); div.textContent=text; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight; }
+function openNight(){ openPanel(nightPanel); if(!chatLog.dataset.greet){ addMsg('ai','夜空がきれいだね。今日はどんな一日だった？'); chatLog.dataset.greet='1'; } }
+chatSend.onclick = async ()=>{ const text = chatInput.value.trim(); if(!text) return; addMsg('user', text); chatInput.value=''; try{ if (window.WHOAI_TALK && WHOAI_TALK.talk) { const { reply } = await WHOAI_TALK.talk(text, { state:{ totalCollected:count } }); addMsg('ai', reply || '…'); } else { addMsg('ai', `（ローカル）${text}。夜風が気持ちいいね。`); } }catch(e){ addMsg('ai','（接続できませんでした）'); console.error(e); } };
 chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); chatSend.click(); } });
 
 /* =============================
@@ -596,18 +477,10 @@ function closePanel(p){ p.classList.remove('show'); p.setAttribute('aria-hidden'
    シーン遷移/ボタン
 ============================= */
 let wanderTimer=null;
-function ensureWander(){ if(wanderTimer) return; wanderTimer = setInterval(()=>{
-  whoaiWrap.style.left   = (8 + Math.random()*72) + 'vw';
-  whoaiWrap.style.bottom = (10 + Math.random()*60) + 'vh';
-}, 5000); }
+function ensureWander(){ if(wanderTimer) return; wanderTimer = setInterval(()=>{ whoaiWrap.style.left=(8+Math.random()*72)+'vw'; whoaiWrap.style.bottom=(10+Math.random()*60)+'vh'; }, 5000); }
 
 $('#btnNight').onclick = ()=>{ scene('night'); say('夜の海。話そうか？'); openNight(); };
-$('#btnReset').onclick = ()=>{
-  count = 0; persistCount(); counter.textContent = 0; $$('.shell').forEach(e=>e.remove());
-  spawnedTotal = 0; store.set('whoai.spawned', spawnedTotal);
-  if(currentScene==='beach'){ resizeSand(); }
-  say('リセットしたよ');
-};
+$('#btnReset').onclick = ()=>{ count=0; persistCount(); counter.textContent=0; $$('.shell').forEach(e=>e.remove()); spawnedTotal=0; store.set('whoai.spawned', spawnedTotal); if(currentScene==='beach'){ resizeSand(); } say('リセットしたよ'); };
 $('#btnAccessory').onclick  = ()=>{ if(getComputedStyle(whoaiWrap).display==='none') selectChar(store.get('whoai.char','./public/assets/stage1/green_open.png')); openAccessory(); };
 $('#btnCollection').onclick = ()=> openCollection();
 
@@ -620,9 +493,8 @@ function persistCount(){ store.set('whoai.count', count); }
    初期化
 ============================= */
 function init(){
-  scene('sunrise'); // 最初は朝日のみ。砂は非表示
+  scene('sunrise'); // 朝日のみ表示
   say('朝日がきれいだね');
-  // 復元
   const savedChar = store.get('whoai.char', null);
   if(savedChar){ whoai.src = savedChar; whoaiWrap.style.display='block'; restoreAccessories(); }
   count = store.get('whoai.count', 0) || 0; counter.textContent = count;
@@ -644,7 +516,7 @@ ASSET LIST (put these under ./public/):
   asari1.png, asari2.png, asari3.png,
   aurora_shell.png, rare_pearl.png, rare_rainbow.png
 - accessories/
-  hat01.png, ribbon_red.png, sunglasses.png, star_hairpin.png
+  straw_hat.png, knit_hat.png, sunglasses.png, ribbon_yellow.png, star_yellow.png
 - bucket.png
 
 DEPENDENCY:
@@ -672,17 +544,15 @@ DEPENDENCY:
   .heroBtns button{padding:12px 18px;border:none;border-radius:12px;cursor:pointer;font-weight:700}
 
   /* キャラ */
-  #whoaiWrap{
-    position:fixed;left:10vw;bottom:12vh;z-index:5;touch-action:none;display:none;
-    transition:left 4s ease, bottom 4s ease;
-  }
+  #whoaiWrap{position:fixed;left:10vw;bottom:12vh;z-index:5;touch-action:none;display:none;transition:left 4s ease, bottom 4s ease}
   #whoai{width:clamp(80px,12vw,140px);user-select:none;display:block}
   #accLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-  .acc{position:absolute;left:50%;top:18%;transform:translate(-50%,-50%) scale(1);
-       width:60%;image-rendering:auto;z-index:2;opacity:1;filter:none}
+  .acc{position:absolute;left:50%;top:18%;transform:translate(-50%,-50%) scale(1);width:60%;image-rendering:auto;z-index:2;opacity:1}
   .acc.sunglasses{top:38%;width:54%}
-  .acc.ribbon_red{top:14%;left:60%;width:32%}
-  .acc.star_hairpin{top:20%;left:65%;width:18%}
+  .acc.ribbon_yellow{top:14%;left:60%;width:32%}
+  .acc.star_yellow{top:20%;left:65%;width:18%}
+  .acc.straw_hat{top:10%;width:90%}
+  .acc.knit_hat{top:18%;width:80%}
 
   .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);
           background:rgba(255,255,255,.78);backdrop-filter:blur(2px);
@@ -713,15 +583,14 @@ DEPENDENCY:
          background:rgba(255,255,255,.92);color:#111;
          padding:8px 12px;border-radius:10px;font-size:14px;min-width:180px}
 
-  /* 主要ボタン（ゲーム中のみフッターに表示） */
+  /* ゲーム中ボタン（フッター） */
   .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);
       display:none;gap:8px;z-index:10;flex-wrap:wrap;justify-content:center}
   .ui.show{display:flex}
   .ui button{padding:8px 14px;border:none;border-radius:10px;cursor:pointer}
 
   /* パネル（共通） */
-  .panel{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.55);display:none;
-         align-items:center;justify-content:center}
+  .panel{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center}
   .panel.show{display:flex}
   .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,720px)}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}
@@ -857,7 +726,6 @@ function scene(name){
   (bg[name]||bg.sunrise).classList.add('show');
   currentScene = name;
   store.set('whoai.lastScene', currentScene);
-  // 砂の表示切り替え
   if(name==='beach'){ sand.classList.add('show'); resizeSand(); }
   else{ sand.classList.remove('show'); }
 }
@@ -873,10 +741,11 @@ const store = {
 ============================= */
 const hero      = $('#hero');
 const gameUi    = $('#gameUi');
-$('#btnHeroStart').onclick = ()=>{ openCharPanel(); };
-$('#btnHeroContinue').onclick = ()=>{
-  continueGame();
+$('#btnHeroStart').onclick = ()=>{ // スタート→キャラ選択→自動でビーチ
+  openCharPanel();
+  say('キャラを選んでね');
 };
+$('#btnHeroContinue').onclick = ()=>{ continueGame(); };
 
 function startGameWithChar(src){
   selectChar(src);
@@ -888,8 +757,8 @@ function startGameWithChar(src){
 
 function continueGame(){
   const savedChar = store.get('whoai.char', null);
-  if(!savedChar){ openCharPanel(); return; }
-  whoai.src = savedChar; whoaiWrap.style.display='block'; ensureWander(); restoreAccessories();
+  const useChar = savedChar || './public/assets/stage1/green_open.png';
+  whoai.src = useChar; whoaiWrap.style.display='block'; ensureWander(); restoreAccessories();
   hero.style.display='none'; gameUi.classList.add('show');
   const last = store.get('whoai.lastScene','beach');
   if(last==='night'){ scene('night'); openNight(); say('夜の海。話そうか？'); }
@@ -904,11 +773,7 @@ const whoai     = $('#whoai');
 const accLayer  = $('#accLayer');
 const bubble    = $('#bubble');
 
-function showBubble(text){
-  bubble.textContent = text;
-  bubble.classList.add('show');
-  setTimeout(()=>bubble.classList.remove('show'), 1300);
-}
+function showBubble(text){ bubble.textContent = text; bubble.classList.add('show'); setTimeout(()=>bubble.classList.remove('show'), 1300); }
 
 // キャラ選択
 const CHAR_LIST = [
@@ -950,10 +815,11 @@ function selectChar(src){
    アクセサリー
 ============================= */
 const ACCESSORIES = [
-  {key:'hat01',       name:'ハット',       src:'./public/accessories/hat01.png',       cls:''},
-  {key:'ribbon_red',  name:'リボン（赤）', src:'./public/accessories/ribbon_red.png',  cls:'ribbon_red'},
-  {key:'sunglasses',  name:'サングラス',   src:'./public/accessories/sunglasses.png',  cls:'sunglasses'},
-  {key:'star_hairpin',name:'スター',       src:'./public/accessories/star_hairpin.png',cls:'star_hairpin'},
+  {key:'straw_hat',    name:'麦わら帽子',     src:'./public/accessories/straw_hat.png',    cls:'straw_hat'},
+  {key:'knit_hat',     name:'毛糸の帽子',     src:'./public/accessories/knit_hat.png',     cls:'knit_hat'},
+  {key:'sunglasses',   name:'サングラス',     src:'./public/accessories/sunglasses.png',   cls:'sunglasses'},
+  {key:'ribbon_yellow',name:'黄色いリボン',   src:'./public/accessories/ribbon_yellow.png',cls:'ribbon_yellow'},
+  {key:'star_yellow',  name:'黄色のスター',   src:'./public/accessories/star_yellow.png',  cls:'star_yellow'},
 ];
 
 const accessoryPanel = $('#accessoryPanel');
@@ -978,37 +844,19 @@ function openAccessory(){
     });
     accList.dataset.ready='1';
   }
-  // 既存装着を反映
   const active = new Set(store.get('whoai.accessories', []));
-  $$('.accChoice', accList).forEach(div=>{
-    const on = active.has(div.dataset.key);
-    div.querySelector('input').checked = on;
-  });
+  $$('.accChoice', accList).forEach(div=>{ div.querySelector('input').checked = active.has(div.dataset.key); });
   openPanel(accessoryPanel);
 }
 
 function toggleAccessory(a, on){
   const active = new Set(store.get('whoai.accessories', []));
-  if(on){ active.add(a.key); addAccImg(a); }
-  else { active.delete(a.key); removeAccImg(a.key); }
+  if(on){ active.add(a.key); addAccImg(a); } else { active.delete(a.key); removeAccImg(a.key); }
   store.set('whoai.accessories', Array.from(active));
 }
-
-function addAccImg(a){
-  removeAccImg(a.key);
-  const img = document.createElement('img');
-  img.src = a.src; img.alt = a.name; img.className = 'acc '+(a.cls||'');
-  img.dataset.key = a.key;
-  accLayer.appendChild(img);
-}
-function removeAccImg(key){
-  const el = accLayer.querySelector(`.acc[data-key="${key}"]`);
-  if(el) el.remove();
-}
-function restoreAccessories(){
-  const active = store.get('whoai.accessories', []);
-  ACCESSORIES.forEach(a=>{ if(active.includes(a.key)) addAccImg(a); });
-}
+function addAccImg(a){ removeAccImg(a.key); const img=document.createElement('img'); img.src=a.src; img.alt=a.name; img.className='acc '+(a.cls||''); img.dataset.key=a.key; accLayer.appendChild(img); }
+function removeAccImg(key){ const el=accLayer.querySelector(`.acc[data-key="${key}"]`); if(el) el.remove(); }
+function restoreAccessories(){ const active=store.get('whoai.accessories', []); ACCESSORIES.forEach(a=>{ if(active.includes(a.key)) addAccImg(a); }); }
 
 /* =============================
    砂キャンバス/貝（総出現上限20）
@@ -1019,8 +867,7 @@ const ctx  = sand.getContext('2d', { willReadFrequently:true });
 function resizeSand(){
   sand.width = innerWidth; sand.height = innerHeight;
   const g = ctx.createLinearGradient(0,0,0,sand.height);
-  g.addColorStop(0, '#e7d9b7');
-  g.addColorStop(1, '#c8b68f');
+  g.addColorStop(0, '#e7d9b7'); g.addColorStop(1, '#c8b68f');
   ctx.fillStyle = g; ctx.fillRect(0,0,sand.width,sand.height);
   ctx.globalAlpha = 0.12;
   for(let i=0;i<800;i++){
@@ -1043,12 +890,8 @@ function brushAt(x,y){
 sand.addEventListener('pointerdown', e=>{ if(currentScene==='beach'){ brushAt(e.clientX, e.clientY); } }, {passive:false});
 sand.addEventListener('pointermove', e=>{ if(currentScene==='beach' && e.buttons){ brushAt(e.clientX, e.clientY); } }, {passive:false});
 
-const COMMON = [
-  './public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'
-];
-const RARE = [
-  './public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'
-];
+const COMMON = ['./public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'];
+const RARE   = ['./public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'];
 
 const bucket  = document.getElementById('bucket');
 const counter = document.getElementById('counter');
@@ -1057,70 +900,34 @@ let spawnedTotal = 0;          // 生成した総数（未回収含む）
 
 const shells = [];
 const MAX_SHELLS = 8;          // 同時表示は控えめ
-const TOTAL_SPAWN_LIMIT = 20;  // 総出現上限（ご要望）
+const TOTAL_SPAWN_LIMIT = 20;  // 総出現上限
 const MIN_DIST   = 90;
-const SPAWN_P    = 0.18;       // 出現確率も少し控えめ
+const SPAWN_P    = 0.18;       // 控えめ
 
 function tooClose(x,y){ return shells.some(s=>Math.hypot(s.x-x,s.y-y)<MIN_DIST); }
-function avoidBucket(x,y){
-  const b=bucket.getBoundingClientRect();
-  const cx=(b.left+b.right)/2, cy=(b.top+b.bottom)/2;
-  return Math.hypot(cx-x,cy-y)<120;
-}
+function avoidBucket(x,y){ const b=bucket.getBoundingClientRect(); const cx=(b.left+b.right)/2, cy=(b.top+b.bottom)/2; return Math.hypot(cx-x,cy-y)<120; }
 
 function maybeSpawnNear(x,y){
   if(shells.length>=MAX_SHELLS) return;
   if(spawnedTotal>=TOTAL_SPAWN_LIMIT) return;
   if(Math.random()>SPAWN_P) return;
-  let px = x + (Math.random()*2-1)*90;
-  let py = y + (Math.random()*2-1)*90;
-  px = Math.max(60, Math.min(innerWidth -60, px));
-  py = Math.max(100, Math.min(innerHeight-100, py));
+  let px = x + (Math.random()*2-1)*90; let py = y + (Math.random()*2-1)*90;
+  px = Math.max(60, Math.min(innerWidth -60, px)); py = Math.max(100, Math.min(innerHeight-100, py));
   if(tooClose(px,py) || avoidBucket(px,py)) return;
-
-  const rare = Math.random()<0.18;
-  const src  = (rare?RARE:COMMON)[Math.floor(Math.random()*(rare?RARE.length:COMMON.length))];
+  const rare = Math.random()<0.18; const src = (rare?RARE:COMMON)[Math.floor(Math.random()*(rare?RARE.length:COMMON.length))];
   const key  = src.split('/').pop().replace('.png','');
-
-  const el = document.createElement('div');
-  el.className = 'shell'; el.style.left = px + 'px'; el.style.top = py + 'px';
-  el.style.backgroundImage = `url(${src})`;
-  document.body.appendChild(el);
-  requestAnimationFrame(()=>el.classList.add('show'));
-  enableShellDrag(el, key);
-  shells.push({el,x:px,y:py,key});
-  spawnedTotal++; store.set('whoai.spawned', spawnedTotal);
+  const el = document.createElement('div'); el.className='shell'; el.style.left=px+'px'; el.style.top=py+'px'; el.style.backgroundImage=`url(${src})`;
+  document.body.appendChild(el); requestAnimationFrame(()=>el.classList.add('show'));
+  enableShellDrag(el, key); shells.push({el,x:px,y:py,key}); spawnedTotal++; store.set('whoai.spawned', spawnedTotal);
 }
 
 function enableShellDrag(el, key){
   let pid=null, dx=0, dy=0;
-  el.addEventListener('pointerdown', e=>{
-    e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid);
-    dx = e.clientX - parseFloat(el.style.left); dy = e.clientY - parseFloat(el.style.top);
-    el.classList.add('drag');
-  }, {passive:false});
-
-  el.addEventListener('pointermove', e=>{
-    if(e.pointerId!==pid) return; e.preventDefault();
-    el.style.left = (e.clientX - dx) + 'px'; el.style.top  = (e.clientY - dy) + 'px';
-  }, {passive:false});
-
-  function finish(e){
-    if(e.pointerId!==pid) return; e.preventDefault();
-    el.classList.remove('drag'); el.releasePointerCapture(pid); pid=null;
-    const b=bucket.getBoundingClientRect(); const s=el.getBoundingClientRect();
-    const hit = !(s.right<b.left || s.left>b.right || s.bottom<b.top || s.top>b.bottom);
-    if(hit){
-      el.remove();
-      const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1);
-      counter.textContent = ++count; persistCount();
-      updateCollection(key, 1);
-      showBubble( Math.random()<0.2 ? 'レアだよ！' : 'やったね！' );
-      refreshCollectionView();
-    }
-  }
-  el.addEventListener('pointerup', finish,   {passive:false});
-  el.addEventListener('pointercancel', finish,{passive:false});
+  el.addEventListener('pointerdown', e=>{ e.preventDefault(); pid=e.pointerId; el.setPointerCapture(pid); dx=e.clientX-parseFloat(el.style.left); dy=e.clientY-parseFloat(el.style.top); el.classList.add('drag'); }, {passive:false});
+  el.addEventListener('pointermove', e=>{ if(e.pointerId!==pid) return; e.preventDefault(); el.style.left=(e.clientX-dx)+'px'; el.style.top=(e.clientY-dy)+'px'; }, {passive:false});
+  function finish(e){ if(e.pointerId!==pid) return; e.preventDefault(); el.classList.remove('drag'); el.releasePointerCapture(pid); pid=null; const b=bucket.getBoundingClientRect(); const s=el.getBoundingClientRect(); const hit = !(s.right<b.left || s.left>b.right || s.bottom<b.top || s.top>b.bottom); if(hit){ el.remove(); const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1); counter.textContent = ++count; persistCount(); updateCollection(key, 1); showBubble( Math.random()<0.2 ? 'レアだよ！' : 'やったね！' ); refreshCollectionView(); } }
+  el.addEventListener('pointerup', finish, {passive:false});
+  el.addEventListener('pointercancel', finish, {passive:false});
 }
 
 /* =============================
@@ -1136,56 +943,22 @@ const ALL_ITEMS = [...COMMON, ...RARE].map(src=>({ key:src.split('/').pop().repl
 
 function getCollection(){ return store.get('whoai.collection', {}); }
 function setCollection(obj){ store.set('whoai.collection', obj); }
-function updateCollection(key, delta){
-  const col = getCollection(); col[key] = (col[key]||0) + (delta||0); if(col[key]<0) col[key]=0; setCollection(col);
-}
+function updateCollection(key, delta){ const col=getCollection(); col[key]=(col[key]||0)+(delta||0); if(col[key]<0) col[key]=0; setCollection(col); }
 function totalCollected(){ return Object.values(getCollection()).reduce((a,b)=>a+b,0); }
 
 function buildCollectionGrid(){
-  // Common
-  colCommon.innerHTML='';
-  COMMON.forEach(src=>{
-    const key = src.split('/').pop().replace('.png','');
-    const slot = document.createElement('div'); slot.className='slot';
-    slot.innerHTML = `
-      <div class="thumb" style="background-image:url(${src})"></div>
-      <div class="name">${key}</div>
-      <div class="count">×<span data-key="${key}">0</span></div>`;
-    colCommon.appendChild(slot);
-  });
-  // Rare
-  colRare.innerHTML='';
-  RARE.forEach(src=>{
-    const key = src.split('/').pop().replace('.png','');
-    const slot = document.createElement('div'); slot.className='slot';
-    slot.innerHTML = `
-      <div class="thumb" style="background-image:url(${src})"></div>
-      <div class="name">${key}</div>
-      <div class="count">×<span data-key="${key}">0</span></div>`;
-    colRare.appendChild(slot);
-  });
+  colCommon.innerHTML=''; COMMON.forEach(src=>{ const key=src.split('/').pop().replace('.png',''); const slot=document.createElement('div'); slot.className='slot'; slot.innerHTML=`<div class="thumb" style="background-image:url(${src})"></div><div class="name">${key}</div><div class="count">×<span data-key="${key}">0</span></div>`; colCommon.appendChild(slot); });
+  colRare.innerHTML='';   RARE.forEach(src=>{ const key=src.split('/').pop().replace('.png',''); const slot=document.createElement('div'); slot.className='slot'; slot.innerHTML=`<div class="thumb" style="background-image:url(${src})"></div><div class="name">${key}</div><div class="count">×<span data-key="${key}">0</span></div>`; colRare.appendChild(slot); });
 }
 
 function refreshCollectionView(){
   const col = getCollection();
-  const totalKinds = ALL_ITEMS.length;
-  const ownedKinds = ALL_ITEMS.filter(x=> (col[x.key]||0)>0 ).length;
-  const total = totalCollected();
+  const totalKinds = ALL_ITEMS.length; const ownedKinds = ALL_ITEMS.filter(x=> (col[x.key]||0)>0 ).length; const total = totalCollected();
   collectionSummary.textContent = `入手種: ${ownedKinds}/${totalKinds}　総数: ${total}　コンプ率: ${Math.round(ownedKinds/totalKinds*100)}%`;
-  $$('#collectionPanel .slot').forEach(slot=>{
-    const span = slot.querySelector('.count span');
-    const key = span && span.getAttribute('data-key');
-    const c = (col[key]||0);
-    span.textContent = c;
-    slot.classList.toggle('has', c>0);
-  });
+  $$('#collectionPanel .slot').forEach(slot=>{ const span=slot.querySelector('.count span'); const key=span && span.getAttribute('data-key'); const c=(col[key]||0); span.textContent=c; slot.classList.toggle('has', c>0); });
 }
 
-function openCollection(){
-  if(!colCommon.dataset.ready){ buildCollectionGrid(); colCommon.dataset.ready='1'; }
-  refreshCollectionView();
-  openPanel(collectionPanel);
-}
+function openCollection(){ if(!colCommon.dataset.ready){ buildCollectionGrid(); colCommon.dataset.ready='1'; } refreshCollectionView(); openPanel(collectionPanel); }
 
 /* =============================
    夜：LINE風チャット（半透明バルーン）
@@ -1196,29 +969,9 @@ const chatInput  = $('#chatInput');
 const chatSend   = $('#chatSend');
 $('#nightClose').onclick = ()=> closePanel(nightPanel);
 
-function addMsg(role,text){
-  const div=document.createElement('div');
-  div.className='msg '+(role==='user'?'me':'ai');
-  div.textContent=text; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight;
-}
-
-function openNight(){
-  openPanel(nightPanel);
-  if(!chatLog.dataset.greet){ addMsg('ai','夜空がきれいだね。今日はどんな一日だった？'); chatLog.dataset.greet='1'; }
-}
-
-chatSend.onclick = async ()=>{
-  const text = chatInput.value.trim(); if(!text) return;
-  addMsg('user', text); chatInput.value='';
-  try{
-    if (window.WHOAI_TALK && WHOAI_TALK.talk) {
-      const { reply } = await WHOAI_TALK.talk(text, { state:{ totalCollected:count } });
-      addMsg('ai', reply || '…');
-    } else {
-      addMsg('ai', `（ローカル）${text}。夜風が気持ちいいね。`);
-    }
-  }catch(e){ addMsg('ai','（接続できませんでした）'); console.error(e); }
-};
+function addMsg(role,text){ const div=document.createElement('div'); div.className='msg '+(role==='user'?'me':'ai'); div.textContent=text; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight; }
+function openNight(){ openPanel(nightPanel); if(!chatLog.dataset.greet){ addMsg('ai','夜空がきれいだね。今日はどんな一日だった？'); chatLog.dataset.greet='1'; } }
+chatSend.onclick = async ()=>{ const text = chatInput.value.trim(); if(!text) return; addMsg('user', text); chatInput.value=''; try{ if (window.WHOAI_TALK && WHOAI_TALK.talk) { const { reply } = await WHOAI_TALK.talk(text, { state:{ totalCollected:count } }); addMsg('ai', reply || '…'); } else { addMsg('ai', `（ローカル）${text}。夜風が気持ちいいね。`); } }catch(e){ addMsg('ai','（接続できませんでした）'); console.error(e); } };
 chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); chatSend.click(); } });
 
 /* =============================
@@ -1231,18 +984,10 @@ function closePanel(p){ p.classList.remove('show'); p.setAttribute('aria-hidden'
    シーン遷移/ボタン
 ============================= */
 let wanderTimer=null;
-function ensureWander(){ if(wanderTimer) return; wanderTimer = setInterval(()=>{
-  whoaiWrap.style.left   = (8 + Math.random()*72) + 'vw';
-  whoaiWrap.style.bottom = (10 + Math.random()*60) + 'vh';
-}, 5000); }
+function ensureWander(){ if(wanderTimer) return; wanderTimer = setInterval(()=>{ whoaiWrap.style.left=(8+Math.random()*72)+'vw'; whoaiWrap.style.bottom=(10+Math.random()*60)+'vh'; }, 5000); }
 
 $('#btnNight').onclick = ()=>{ scene('night'); say('夜の海。話そうか？'); openNight(); };
-$('#btnReset').onclick = ()=>{
-  count = 0; persistCount(); counter.textContent = 0; $$('.shell').forEach(e=>e.remove());
-  spawnedTotal = 0; store.set('whoai.spawned', spawnedTotal);
-  if(currentScene==='beach'){ resizeSand(); }
-  say('リセットしたよ');
-};
+$('#btnReset').onclick = ()=>{ count=0; persistCount(); counter.textContent=0; $$('.shell').forEach(e=>e.remove()); spawnedTotal=0; store.set('whoai.spawned', spawnedTotal); if(currentScene==='beach'){ resizeSand(); } say('リセットしたよ'); };
 $('#btnAccessory').onclick  = ()=>{ if(getComputedStyle(whoaiWrap).display==='none') selectChar(store.get('whoai.char','./public/assets/stage1/green_open.png')); openAccessory(); };
 $('#btnCollection').onclick = ()=> openCollection();
 
@@ -1255,9 +1000,8 @@ function persistCount(){ store.set('whoai.count', count); }
    初期化
 ============================= */
 function init(){
-  scene('sunrise'); // 最初は朝日のみ。砂は非表示
+  scene('sunrise'); // 朝日のみ表示
   say('朝日がきれいだね');
-  // 復元
   const savedChar = store.get('whoai.char', null);
   if(savedChar){ whoai.src = savedChar; whoaiWrap.style.display='block'; restoreAccessories(); }
   count = store.get('whoai.count', 0) || 0; counter.textContent = count;
