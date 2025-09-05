@@ -551,14 +551,16 @@ function persistCount(){ store.set('whoai.count', count); }
 function init(){
   // 言語復元
   setLang(getLang());
+  // 最初は必ず朝日のヒーロー画面（キャラは表示しない）
   scene('sunrise');
-  // 復元
-  const savedChar = store.get('whoai.char', null);
-  if(savedChar){ whoai.src = savedChar; whoaiWrap.style.display='block'; restoreAccessories(); }
+  hero.style.display = 'flex';
+  gameUi.classList.remove('show');
+  whoaiWrap.style.display = 'none';
+  // 保存値は読み込むが、この時点では画面に反映しない（続きから押下時に反映）
   count = store.get('whoai.count', 0) || 0; counter.textContent = count;
   spawnedTotal = store.get('whoai.spawned', 0) || 0;
 }
-addEventListener('resize', ()=>{ if(currentScene==='beach') resizeSand(); });
+addEventListener('resize', ()=>{ if(currentScene==='beach') resizeSand(); });('resize', ()=>{ if(currentScene==='beach') resizeSand(); });
 init();
 </script>
 </body>
