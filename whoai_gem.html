@@ -30,6 +30,12 @@ DEPENDENCY:
       opacity:0;transition:opacity .7s}
   .bg.show{opacity:1}
 
+  /* ヒーロー（最初の朝日画面） */
+  #hero{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;background:rgba(0,0,0,.15)}
+  #hero h1{font-size:clamp(20px,4vw,36px);margin:0;text-shadow:0 2px 8px rgba(0,0,0,.45)}
+  .heroBtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .heroBtns button{padding:12px 18px;border:none;border-radius:12px;cursor:pointer;font-weight:700}
+
   /* キャラ */
   #whoaiWrap{
     position:fixed;left:10vw;bottom:12vh;z-index:5;touch-action:none;display:none;
@@ -44,7 +50,8 @@ DEPENDENCY:
   .acc.star_hairpin{top:20%;left:65%;width:18%}
 
   .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);
-          background:#fff;color:#111;border-radius:10px;padding:4px 8px;font-size:14px;
+          background:rgba(255,255,255,.78);backdrop-filter:blur(2px);
+          color:#111;border-radius:10px;padding:4px 8px;font-size:14px;
           box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:.18s;white-space:nowrap}
   .bubble.show{opacity:1;transform:translate(-50%,-12px)}
 
@@ -52,10 +59,11 @@ DEPENDENCY:
   #bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(74px,14vw,160px)}
   #bucket img{width:100%;display:block}
   #counter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-           background:#fff;color:#111;border-radius:999px;padding:4px 8px;font-weight:600}
+           background:rgba(255,255,255,.9);color:#111;border-radius:999px;padding:4px 8px;font-weight:600}
 
-  /* 砂キャンバス */
-  #sand{position:fixed;inset:0;z-index:2;touch-action:none}
+  /* 砂キャンバス（ビーチのみ表示） */
+  #sand{position:fixed;inset:0;z-index:2;touch-action:none;display:none}
+  #sand.show{display:block}
 
   /* 貝 */
   .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:clamp(48px,6vw,72px);
@@ -70,9 +78,10 @@ DEPENDENCY:
          background:rgba(255,255,255,.92);color:#111;
          padding:8px 12px;border-radius:10px;font-size:14px;min-width:180px}
 
-  /* 主要ボタン */
+  /* 主要ボタン（ゲーム中のみフッターに表示） */
   .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);
-      display:flex;gap:8px;z-index:10;flex-wrap:wrap;justify-content:center}
+      display:none;gap:8px;z-index:10;flex-wrap:wrap;justify-content:center}
+  .ui.show{display:flex}
   .ui button{padding:8px 14px;border:none;border-radius:10px;cursor:pointer}
 
   /* パネル（共通） */
@@ -85,12 +94,12 @@ DEPENDENCY:
   .choice:hover{transform:translateY(-2px)}
   .choice img{max-width:100%;height:auto;display:block;margin:0 auto 6px}
 
-  /* 夜の会話（LINE風） */
-  #nightPanel .card{width:min(96svw,640px);max-height:90vh;display:flex;flex-direction:column}
-  #chatLog{flex:1;background:#f2f2f2;padding:10px;border-radius:10px;overflow:auto}
+  /* 夜の会話（LINE風：半透明に） */
+  #nightPanel .card{width:min(96svw,640px);max-height:90vh;display:flex;flex-direction:column;backdrop-filter:blur(2px)}
+  #chatLog{flex:1;background:rgba(242,242,242,.75);padding:10px;border-radius:10px;overflow:auto}
   .msg{margin:6px 0;padding:8px 12px;border-radius:16px;max-width:70%}
-  .msg.me{background:#aee1ff;color:#002; margin-left:auto}
-  .msg.ai{background:#fff;color:#000;   margin-right:auto}
+  .msg.me{background:rgba(174,225,255,.85);color:#002; margin-left:auto}
+  .msg.ai{background:rgba(255,255,255,.85);color:#000;   margin-right:auto}
   #chatCtrl{display:flex;gap:6px;margin-top:8px}
   #chatInput{flex:1;padding:10px;border-radius:12px;border:1px solid #ccc}
   #chatSend{padding:10px 14px;border:none;border-radius:12px;background:#4cafef;color:#fff;cursor:pointer}
@@ -110,9 +119,18 @@ DEPENDENCY:
 </head>
 <body>
   <!-- 背景 -->
-  <div id="bg-sunrise" class="bg" style="background-image:url('./public/bg/sunrise.jpg')"></div>
-  <div id="bg-beach"   class="bg" style="background-image:url('./public/bg/beach_day.jpg')"></div>
-  <div id="bg-night"   class="bg" style="background-image:url('./public/bg/night_beach.jpg')"></div>
+  <div id="bg-sunrise" class="bg show" style="background-image:url('./public/bg/sunrise.jpg')"></div>
+  <div id="bg-beach"   class="bg"        style="background-image:url('./public/bg/beach_day.jpg')"></div>
+  <div id="bg-night"   class="bg"        style="background-image:url('./public/bg/night_beach.jpg')"></div>
+
+  <!-- 最初の朝日画面（スタート/続きから） -->
+  <div id="hero">
+    <h1>朝日の海へようこそ</h1>
+    <div class="heroBtns">
+      <button id="btnHeroStart">スタート</button>
+      <button id="btnHeroContinue">続きから</button>
+    </div>
+  </div>
 
   <!-- キャラ -->
   <div id="whoaiWrap">
@@ -127,16 +145,14 @@ DEPENDENCY:
     <div id="counter">0</div>
   </div>
 
-  <!-- 砂 -->
+  <!-- 砂（ビーチでのみ表示） -->
   <canvas id="sand"></canvas>
 
   <!-- トースト（右上） -->
-  <div id="toast">おはよう。朝日がきれいだね</div>
+  <div id="toast">朝日がきれいだね</div>
 
-  <!-- 主要ボタン -->
-  <div class="ui">
-    <button id="btnStart">スタート</button>
-    <button id="btnBegin">はじめに</button>
+  <!-- ゲーム中ボタン（フッター） -->
+  <div class="ui" id="gameUi">
     <button id="btnNight">夜へ</button>
     <button id="btnAccessory">アクセサリー</button>
     <button id="btnCollection">コレクション</button>
@@ -148,9 +164,7 @@ DEPENDENCY:
     <div class="card">
       <h2>キャラを選んでね</h2>
       <div id="charGrid" class="grid"></div>
-      <div style="text-align:right;margin-top:8px">
-        <button id="charClose">閉じる</button>
-      </div>
+      <div style="text-align:right;margin-top:8px"><button id="charClose">閉じる</button></div>
     </div>
   </div>
 
@@ -163,9 +177,7 @@ DEPENDENCY:
         <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
         <button id="chatSend">送信</button>
       </div>
-      <div style="text-align:right;margin-top:8px">
-        <button id="nightClose">閉じる</button>
-      </div>
+      <div style="text-align:right;margin-top:8px"><button id="nightClose">閉じる</button></div>
     </div>
   </div>
 
@@ -174,9 +186,7 @@ DEPENDENCY:
     <div class="card">
       <h2>アクセサリー</h2>
       <div id="accList" class="grid"></div>
-      <div style="text-align:right;margin-top:8px">
-        <button id="accClose">閉じる</button>
-      </div>
+      <div style="text-align:right;margin-top:8px"><button id="accClose">閉じる</button></div>
     </div>
   </div>
 
@@ -189,9 +199,7 @@ DEPENDENCY:
       <div id="colCommon" class="grid" style="margin-bottom:12px"></div>
       <h3>レア</h3>
       <div id="colRare" class="grid"></div>
-      <div style="text-align:right;margin-top:8px">
-        <button id="colClose">閉じる</button>
-      </div>
+      <div style="text-align:right;margin-top:8px"><button id="colClose">閉じる</button></div>
     </div>
   </div>
 
@@ -202,19 +210,21 @@ DEPENDENCY:
 /* =============================
    ユーティリティ/状態管理
 ============================= */
-const $ = (sel, parent=document) => parent.querySelector(sel);
+const $  = (sel, parent=document) => parent.querySelector(sel);
 const $$ = (sel, parent=document) => Array.from(parent.querySelectorAll(sel));
 const toast = $('#toast');
 const say   = (s)=>{ toast.textContent = s; };
 
-const bg = {
-  sunrise: $('#bg-sunrise'), beach: $('#bg-beach'), night: $('#bg-night'),
-};
+const bg = { sunrise: $('#bg-sunrise'), beach: $('#bg-beach'), night: $('#bg-night') };
 let currentScene = 'sunrise';
 function scene(name){
   Object.values(bg).forEach(e=>e.classList.remove('show'));
   (bg[name]||bg.sunrise).classList.add('show');
   currentScene = name;
+  store.set('whoai.lastScene', currentScene);
+  // 砂の表示切り替え
+  if(name==='beach'){ sand.classList.add('show'); resizeSand(); }
+  else{ sand.classList.remove('show'); }
 }
 
 // 永続化
@@ -222,6 +232,34 @@ const store = {
   get(k, def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch{ return def; } },
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
 };
+
+/* =============================
+   ヒーロー開始/続きから
+============================= */
+const hero      = $('#hero');
+const gameUi    = $('#gameUi');
+$('#btnHeroStart').onclick = ()=>{ openCharPanel(); };
+$('#btnHeroContinue').onclick = ()=>{
+  continueGame();
+};
+
+function startGameWithChar(src){
+  selectChar(src);
+  hero.style.display='none';
+  gameUi.classList.add('show');
+  scene('beach');
+  say('砂の中に貝があるよ。なでて探してね');
+}
+
+function continueGame(){
+  const savedChar = store.get('whoai.char', null);
+  if(!savedChar){ openCharPanel(); return; }
+  whoai.src = savedChar; whoaiWrap.style.display='block'; ensureWander(); restoreAccessories();
+  hero.style.display='none'; gameUi.classList.add('show');
+  const last = store.get('whoai.lastScene','beach');
+  if(last==='night'){ scene('night'); openNight(); say('夜の海。話そうか？'); }
+  else{ scene('beach'); say('砂の中に貝があるよ。なでて探してね'); }
+}
 
 /* =============================
    キャラ/吹き出し
@@ -253,7 +291,7 @@ function openCharPanel(){
       const div = document.createElement('div');
       div.className = 'choice';
       div.innerHTML = `<img src="${src}" alt=""><div>${src.split('/').pop().replace('.png','')}</div>`;
-      div.onclick = ()=> selectChar(src);
+      div.onclick = ()=> startGameWithChar(src);
       charGrid.appendChild(div);
     });
     charGrid.dataset.ready = '1';
@@ -269,7 +307,6 @@ function selectChar(src){
   store.set('whoai.char', src);
   closePanel(charPanel);
   showBubble('おはよう！');
-  say('キャラを選んだよ。はじめに → 砂をよけてみよう');
   ensureWander();
   restoreAccessories();
 }
@@ -339,7 +376,7 @@ function restoreAccessories(){
 }
 
 /* =============================
-   砂キャンバス/貝
+   砂キャンバス/貝（総出現上限20）
 ============================= */
 const sand = document.getElementById('sand');
 const ctx  = sand.getContext('2d', { willReadFrequently:true });
@@ -380,12 +417,14 @@ const RARE = [
 
 const bucket  = document.getElementById('bucket');
 const counter = document.getElementById('counter');
-let count = 0;
+let count = 0;                 // バケツに入れた数
+let spawnedTotal = 0;          // 生成した総数（未回収含む）
 
 const shells = [];
-const MAX_SHELLS = 10;
+const MAX_SHELLS = 8;          // 同時表示は控えめ
+const TOTAL_SPAWN_LIMIT = 20;  // 総出現上限（ご要望）
 const MIN_DIST   = 90;
-const SPAWN_P    = 0.28;
+const SPAWN_P    = 0.18;       // 出現確率も少し控えめ
 
 function tooClose(x,y){ return shells.some(s=>Math.hypot(s.x-x,s.y-y)<MIN_DIST); }
 function avoidBucket(x,y){
@@ -396,6 +435,7 @@ function avoidBucket(x,y){
 
 function maybeSpawnNear(x,y){
   if(shells.length>=MAX_SHELLS) return;
+  if(spawnedTotal>=TOTAL_SPAWN_LIMIT) return;
   if(Math.random()>SPAWN_P) return;
   let px = x + (Math.random()*2-1)*90;
   let py = y + (Math.random()*2-1)*90;
@@ -414,6 +454,7 @@ function maybeSpawnNear(x,y){
   requestAnimationFrame(()=>el.classList.add('show'));
   enableShellDrag(el, key);
   shells.push({el,x:px,y:py,key});
+  spawnedTotal++; store.set('whoai.spawned', spawnedTotal);
 }
 
 function enableShellDrag(el, key){
@@ -512,7 +553,7 @@ function openCollection(){
 }
 
 /* =============================
-   夜：LINE風チャット
+   夜：LINE風チャット（半透明バルーン）
 ============================= */
 const nightPanel = $('#nightPanel');
 const chatLog    = $('#chatLog');
@@ -560,23 +601,18 @@ function ensureWander(){ if(wanderTimer) return; wanderTimer = setInterval(()=>{
   whoaiWrap.style.bottom = (10 + Math.random()*60) + 'vh';
 }, 5000); }
 
-$('#btnStart').onclick = ()=>{ openCharPanel(); say('キャラを選んでね'); };
-$('#btnBegin').onclick = ()=>{
-  scene('beach'); say('砂の中に貝があるよ。なでて探してね'); resizeSand();
-  if(getComputedStyle(whoaiWrap).display==='none'){
-    const savedChar = store.get('whoai.char', './public/assets/stage1/green_open.png');
-    selectChar(savedChar); // 内部で表示＆保存＆アクセ復元
-  } else { ensureWander(); }
-};
 $('#btnNight').onclick = ()=>{ scene('night'); say('夜の海。話そうか？'); openNight(); };
 $('#btnReset').onclick = ()=>{
-  count = 0; persistCount(); counter.textContent = 0; $$('.shell').forEach(e=>e.remove()); resizeSand(); say('リセットしたよ');
+  count = 0; persistCount(); counter.textContent = 0; $$('.shell').forEach(e=>e.remove());
+  spawnedTotal = 0; store.set('whoai.spawned', spawnedTotal);
+  if(currentScene==='beach'){ resizeSand(); }
+  say('リセットしたよ');
 };
 $('#btnAccessory').onclick  = ()=>{ if(getComputedStyle(whoaiWrap).display==='none') selectChar(store.get('whoai.char','./public/assets/stage1/green_open.png')); openAccessory(); };
 $('#btnCollection').onclick = ()=> openCollection();
 
 /* =============================
-   永続化（収集数）
+   永続化（収集数等）
 ============================= */
 function persistCount(){ store.set('whoai.count', count); }
 
@@ -584,13 +620,650 @@ function persistCount(){ store.set('whoai.count', count); }
    初期化
 ============================= */
 function init(){
-  scene('sunrise'); say('おはよう。朝日がきれいだね'); resizeSand();
+  scene('sunrise'); // 最初は朝日のみ。砂は非表示
+  say('朝日がきれいだね');
   // 復元
   const savedChar = store.get('whoai.char', null);
-  if(savedChar){ whoai.src = savedChar; whoaiWrap.style.display='block'; ensureWander(); restoreAccessories(); }
+  if(savedChar){ whoai.src = savedChar; whoaiWrap.style.display='block'; restoreAccessories(); }
   count = store.get('whoai.count', 0) || 0; counter.textContent = count;
+  spawnedTotal = store.get('whoai.spawned', 0) || 0;
 }
-addEventListener('resize', resizeSand);
+addEventListener('resize', ()=>{ if(currentScene==='beach') resizeSand(); });
+init();
+</script>
+</body>
+</html>
+<!--
+ASSET LIST (put these under ./public/):
+- bg/
+  sunrise.jpg, beach_day.jpg, night_beach.jpg
+- assets/stage1/
+  blue_closed.png, green_open.png, orange_closed.png, pink_closed.png, purple_closed.png,
+  tane_green.png, tane_pink.png, tane_purple.png, tane_blue.png
+- items/
+  asari1.png, asari2.png, asari3.png,
+  aurora_shell.png, rare_pearl.png, rare_rainbow.png
+- accessories/
+  hat01.png, ribbon_red.png, sunglasses.png, star_hairpin.png
+- bucket.png
+
+DEPENDENCY:
+- ./api/talk.js  (provides window.WHOAI_TALK.talk(text, {state}) )
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
+<title>WHOAI Gem</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
+    font-family:system-ui,"Noto Sans JP",sans-serif;touch-action:none;overscroll-behavior:none}
+
+  /* 背景 */
+  .bg{position:fixed;inset:0;background-size:cover;background-position:center;
+      opacity:0;transition:opacity .7s}
+  .bg.show{opacity:1}
+
+  /* ヒーロー（最初の朝日画面） */
+  #hero{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;background:rgba(0,0,0,.15)}
+  #hero h1{font-size:clamp(20px,4vw,36px);margin:0;text-shadow:0 2px 8px rgba(0,0,0,.45)}
+  .heroBtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .heroBtns button{padding:12px 18px;border:none;border-radius:12px;cursor:pointer;font-weight:700}
+
+  /* キャラ */
+  #whoaiWrap{
+    position:fixed;left:10vw;bottom:12vh;z-index:5;touch-action:none;display:none;
+    transition:left 4s ease, bottom 4s ease;
+  }
+  #whoai{width:clamp(80px,12vw,140px);user-select:none;display:block}
+  #accLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+  .acc{position:absolute;left:50%;top:18%;transform:translate(-50%,-50%) scale(1);
+       width:60%;image-rendering:auto;z-index:2;opacity:1;filter:none}
+  .acc.sunglasses{top:38%;width:54%}
+  .acc.ribbon_red{top:14%;left:60%;width:32%}
+  .acc.star_hairpin{top:20%;left:65%;width:18%}
+
+  .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);
+          background:rgba(255,255,255,.78);backdrop-filter:blur(2px);
+          color:#111;border-radius:10px;padding:4px 8px;font-size:14px;
+          box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:.18s;white-space:nowrap}
+  .bubble.show{opacity:1;transform:translate(-50%,-12px)}
+
+  /* バケツ */
+  #bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(74px,14vw,160px)}
+  #bucket img{width:100%;display:block}
+  #counter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+           background:rgba(255,255,255,.9);color:#111;border-radius:999px;padding:4px 8px;font-weight:600}
+
+  /* 砂キャンバス（ビーチのみ表示） */
+  #sand{position:fixed;inset:0;z-index:2;touch-action:none;display:none}
+  #sand.show{display:block}
+
+  /* 貝 */
+  .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:clamp(48px,6vw,72px);
+         transform:translate(-50%,-50%);
+         background-size:contain;background-repeat:no-repeat;background-position:center;
+         cursor:grab;opacity:0;transition:opacity .18s, transform .18s}
+  .shell.show{opacity:1}
+  .shell.drag{transform:translate(-50%,-50%) scale(1.04)}
+
+  /* トースト */
+  #toast{position:fixed;right:10px;top:10px;z-index:20;
+         background:rgba(255,255,255,.92);color:#111;
+         padding:8px 12px;border-radius:10px;font-size:14px;min-width:180px}
+
+  /* 主要ボタン（ゲーム中のみフッターに表示） */
+  .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);
+      display:none;gap:8px;z-index:10;flex-wrap:wrap;justify-content:center}
+  .ui.show{display:flex}
+  .ui button{padding:8px 14px;border:none;border-radius:10px;cursor:pointer}
+
+  /* パネル（共通） */
+  .panel{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.55);display:none;
+         align-items:center;justify-content:center}
+  .panel.show{display:flex}
+  .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,720px)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}
+  .choice{border:1px solid #eee;border-radius:12px;padding:8px;text-align:center;cursor:pointer;transition:transform .12s}
+  .choice:hover{transform:translateY(-2px)}
+  .choice img{max-width:100%;height:auto;display:block;margin:0 auto 6px}
+
+  /* 夜の会話（LINE風：半透明に） */
+  #nightPanel .card{width:min(96svw,640px);max-height:90vh;display:flex;flex-direction:column;backdrop-filter:blur(2px)}
+  #chatLog{flex:1;background:rgba(242,242,242,.75);padding:10px;border-radius:10px;overflow:auto}
+  .msg{margin:6px 0;padding:8px 12px;border-radius:16px;max-width:70%}
+  .msg.me{background:rgba(174,225,255,.85);color:#002; margin-left:auto}
+  .msg.ai{background:rgba(255,255,255,.85);color:#000;   margin-right:auto}
+  #chatCtrl{display:flex;gap:6px;margin-top:8px}
+  #chatInput{flex:1;padding:10px;border-radius:12px;border:1px solid #ccc}
+  #chatSend{padding:10px 14px;border:none;border-radius:12px;background:#4cafef;color:#fff;cursor:pointer}
+
+  /* コレクション表示 */
+  .slot{border:1px solid #eee;border-radius:12px;padding:10px;text-align:center;background:#fafafa}
+  .slot .thumb{width:72px;height:72px;margin:0 auto 6px;background-size:contain;background-position:center;background-repeat:no-repeat;filter:grayscale(1) contrast(.7) opacity(.5)}
+  .slot.has .thumb{filter:none}
+  .slot .name{font-size:12px;color:#333}
+  .slot .count{font-weight:700}
+
+  /* アクセサリー選択 */
+  .accChoice{display:flex;gap:10px;align-items:center;border:1px solid #eee;border-radius:12px;padding:8px;cursor:pointer}
+  .accChoice .t{flex:1}
+  .accChoice img{width:48px;height:48px;object-fit:contain}
+</style>
+</head>
+<body>
+  <!-- 背景 -->
+  <div id="bg-sunrise" class="bg show" style="background-image:url('./public/bg/sunrise.jpg')"></div>
+  <div id="bg-beach"   class="bg"        style="background-image:url('./public/bg/beach_day.jpg')"></div>
+  <div id="bg-night"   class="bg"        style="background-image:url('./public/bg/night_beach.jpg')"></div>
+
+  <!-- 最初の朝日画面（スタート/続きから） -->
+  <div id="hero">
+    <h1>朝日の海へようこそ</h1>
+    <div class="heroBtns">
+      <button id="btnHeroStart">スタート</button>
+      <button id="btnHeroContinue">続きから</button>
+    </div>
+  </div>
+
+  <!-- キャラ -->
+  <div id="whoaiWrap">
+    <img id="whoai" src="" alt="whoai">
+    <div id="accLayer"></div>
+    <div id="bubble" class="bubble"></div>
+  </div>
+
+  <!-- バケツ -->
+  <div id="bucket">
+    <img id="bucketImg" src="./public/bucket.png" alt="bucket">
+    <div id="counter">0</div>
+  </div>
+
+  <!-- 砂（ビーチでのみ表示） -->
+  <canvas id="sand"></canvas>
+
+  <!-- トースト（右上） -->
+  <div id="toast">朝日がきれいだね</div>
+
+  <!-- ゲーム中ボタン（フッター） -->
+  <div class="ui" id="gameUi">
+    <button id="btnNight">夜へ</button>
+    <button id="btnAccessory">アクセサリー</button>
+    <button id="btnCollection">コレクション</button>
+    <button id="btnReset">リセット</button>
+  </div>
+
+  <!-- キャラ選択 -->
+  <div id="charPanel" class="panel" aria-hidden="true">
+    <div class="card">
+      <h2>キャラを選んでね</h2>
+      <div id="charGrid" class="grid"></div>
+      <div style="text-align:right;margin-top:8px"><button id="charClose">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- 夜の会話 -->
+  <div id="nightPanel" class="panel" aria-hidden="true">
+    <div class="card">
+      <h2>また明日</h2>
+      <div id="chatLog"></div>
+      <div id="chatCtrl">
+        <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
+        <button id="chatSend">送信</button>
+      </div>
+      <div style="text-align:right;margin-top:8px"><button id="nightClose">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- アクセサリーパネル -->
+  <div id="accessoryPanel" class="panel" aria-hidden="true">
+    <div class="card">
+      <h2>アクセサリー</h2>
+      <div id="accList" class="grid"></div>
+      <div style="text-align:right;margin-top:8px"><button id="accClose">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- コレクションパネル -->
+  <div id="collectionPanel" class="panel" aria-hidden="true">
+    <div class="card">
+      <h2>コレクション</h2>
+      <div id="collectionSummary" style="margin:6px 0 12px;color:#333"></div>
+      <h3>よくある貝</h3>
+      <div id="colCommon" class="grid" style="margin-bottom:12px"></div>
+      <h3>レア</h3>
+      <div id="colRare" class="grid"></div>
+      <div style="text-align:right;margin-top:8px"><button id="colClose">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- WHOAIの会話APIラッパ（そのまま） -->
+  <script src="./api/talk.js"></script>
+
+<script>
+/* =============================
+   ユーティリティ/状態管理
+============================= */
+const $  = (sel, parent=document) => parent.querySelector(sel);
+const $$ = (sel, parent=document) => Array.from(parent.querySelectorAll(sel));
+const toast = $('#toast');
+const say   = (s)=>{ toast.textContent = s; };
+
+const bg = { sunrise: $('#bg-sunrise'), beach: $('#bg-beach'), night: $('#bg-night') };
+let currentScene = 'sunrise';
+function scene(name){
+  Object.values(bg).forEach(e=>e.classList.remove('show'));
+  (bg[name]||bg.sunrise).classList.add('show');
+  currentScene = name;
+  store.set('whoai.lastScene', currentScene);
+  // 砂の表示切り替え
+  if(name==='beach'){ sand.classList.add('show'); resizeSand(); }
+  else{ sand.classList.remove('show'); }
+}
+
+// 永続化
+const store = {
+  get(k, def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch{ return def; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
+};
+
+/* =============================
+   ヒーロー開始/続きから
+============================= */
+const hero      = $('#hero');
+const gameUi    = $('#gameUi');
+$('#btnHeroStart').onclick = ()=>{ openCharPanel(); };
+$('#btnHeroContinue').onclick = ()=>{
+  continueGame();
+};
+
+function startGameWithChar(src){
+  selectChar(src);
+  hero.style.display='none';
+  gameUi.classList.add('show');
+  scene('beach');
+  say('砂の中に貝があるよ。なでて探してね');
+}
+
+function continueGame(){
+  const savedChar = store.get('whoai.char', null);
+  if(!savedChar){ openCharPanel(); return; }
+  whoai.src = savedChar; whoaiWrap.style.display='block'; ensureWander(); restoreAccessories();
+  hero.style.display='none'; gameUi.classList.add('show');
+  const last = store.get('whoai.lastScene','beach');
+  if(last==='night'){ scene('night'); openNight(); say('夜の海。話そうか？'); }
+  else{ scene('beach'); say('砂の中に貝があるよ。なでて探してね'); }
+}
+
+/* =============================
+   キャラ/吹き出し
+============================= */
+const whoaiWrap = $('#whoaiWrap');
+const whoai     = $('#whoai');
+const accLayer  = $('#accLayer');
+const bubble    = $('#bubble');
+
+function showBubble(text){
+  bubble.textContent = text;
+  bubble.classList.add('show');
+  setTimeout(()=>bubble.classList.remove('show'), 1300);
+}
+
+// キャラ選択
+const CHAR_LIST = [
+  'blue_closed.png','green_open.png','orange_closed.png','pink_closed.png','purple_closed.png',
+  'tane_green.png','tane_pink.png','tane_purple.png','tane_blue.png'
+].map(n=>`./public/assets/stage1/${n}`);
+
+const charPanel = $('#charPanel');
+const charGrid  = $('#charGrid');
+$('#charClose').onclick = ()=> closePanel(charPanel);
+
+function openCharPanel(){
+  if(!charGrid.dataset.ready){
+    CHAR_LIST.forEach(src=>{
+      const div = document.createElement('div');
+      div.className = 'choice';
+      div.innerHTML = `<img src="${src}" alt=""><div>${src.split('/').pop().replace('.png','')}</div>`;
+      div.onclick = ()=> startGameWithChar(src);
+      charGrid.appendChild(div);
+    });
+    charGrid.dataset.ready = '1';
+  }
+  openPanel(charPanel);
+}
+
+function selectChar(src){
+  whoai.src = src;
+  whoaiWrap.style.display = 'block';
+  whoaiWrap.style.left    = '10vw';
+  whoaiWrap.style.bottom  = '12vh';
+  store.set('whoai.char', src);
+  closePanel(charPanel);
+  showBubble('おはよう！');
+  ensureWander();
+  restoreAccessories();
+}
+
+/* =============================
+   アクセサリー
+============================= */
+const ACCESSORIES = [
+  {key:'hat01',       name:'ハット',       src:'./public/accessories/hat01.png',       cls:''},
+  {key:'ribbon_red',  name:'リボン（赤）', src:'./public/accessories/ribbon_red.png',  cls:'ribbon_red'},
+  {key:'sunglasses',  name:'サングラス',   src:'./public/accessories/sunglasses.png',  cls:'sunglasses'},
+  {key:'star_hairpin',name:'スター',       src:'./public/accessories/star_hairpin.png',cls:'star_hairpin'},
+];
+
+const accessoryPanel = $('#accessoryPanel');
+const accList        = $('#accList');
+$('#accClose').onclick = ()=> closePanel(accessoryPanel);
+
+function openAccessory(){
+  if(!accList.dataset.ready){
+    ACCESSORIES.forEach(a=>{
+      const item = document.createElement('div');
+      item.className = 'accChoice';
+      item.innerHTML = `
+        <img src="${a.src}" alt="${a.name}">
+        <div class="t"><div style="font-weight:700">${a.name}</div><div style="font-size:12px;color:#666">タップで装着/解除</div></div>
+        <input type="checkbox" aria-label="${a.name}">
+      `;
+      const checkbox = item.querySelector('input');
+      checkbox.addEventListener('change',()=> toggleAccessory(a, checkbox.checked));
+      item.addEventListener('click', (e)=>{ if(e.target.tagName!=='INPUT'){ checkbox.checked=!checkbox.checked; checkbox.dispatchEvent(new Event('change')); }});
+      item.dataset.key = a.key;
+      accList.appendChild(item);
+    });
+    accList.dataset.ready='1';
+  }
+  // 既存装着を反映
+  const active = new Set(store.get('whoai.accessories', []));
+  $$('.accChoice', accList).forEach(div=>{
+    const on = active.has(div.dataset.key);
+    div.querySelector('input').checked = on;
+  });
+  openPanel(accessoryPanel);
+}
+
+function toggleAccessory(a, on){
+  const active = new Set(store.get('whoai.accessories', []));
+  if(on){ active.add(a.key); addAccImg(a); }
+  else { active.delete(a.key); removeAccImg(a.key); }
+  store.set('whoai.accessories', Array.from(active));
+}
+
+function addAccImg(a){
+  removeAccImg(a.key);
+  const img = document.createElement('img');
+  img.src = a.src; img.alt = a.name; img.className = 'acc '+(a.cls||'');
+  img.dataset.key = a.key;
+  accLayer.appendChild(img);
+}
+function removeAccImg(key){
+  const el = accLayer.querySelector(`.acc[data-key="${key}"]`);
+  if(el) el.remove();
+}
+function restoreAccessories(){
+  const active = store.get('whoai.accessories', []);
+  ACCESSORIES.forEach(a=>{ if(active.includes(a.key)) addAccImg(a); });
+}
+
+/* =============================
+   砂キャンバス/貝（総出現上限20）
+============================= */
+const sand = document.getElementById('sand');
+const ctx  = sand.getContext('2d', { willReadFrequently:true });
+
+function resizeSand(){
+  sand.width = innerWidth; sand.height = innerHeight;
+  const g = ctx.createLinearGradient(0,0,0,sand.height);
+  g.addColorStop(0, '#e7d9b7');
+  g.addColorStop(1, '#c8b68f');
+  ctx.fillStyle = g; ctx.fillRect(0,0,sand.width,sand.height);
+  ctx.globalAlpha = 0.12;
+  for(let i=0;i<800;i++){
+    const x = Math.random()*sand.width; const y = Math.random()*sand.height;
+    ctx.fillStyle = (i%3===0)?'#bfae82':'#d2c29a';
+    ctx.beginPath(); ctx.arc(x,y,Math.random()*1.2+0.2,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+const BRUSH = 30;
+function brushAt(x,y){
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath(); ctx.arc(x,y,BRUSH,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  maybeSpawnNear(x,y);
+}
+
+sand.addEventListener('pointerdown', e=>{ if(currentScene==='beach'){ brushAt(e.clientX, e.clientY); } }, {passive:false});
+sand.addEventListener('pointermove', e=>{ if(currentScene==='beach' && e.buttons){ brushAt(e.clientX, e.clientY); } }, {passive:false});
+
+const COMMON = [
+  './public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'
+];
+const RARE = [
+  './public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'
+];
+
+const bucket  = document.getElementById('bucket');
+const counter = document.getElementById('counter');
+let count = 0;                 // バケツに入れた数
+let spawnedTotal = 0;          // 生成した総数（未回収含む）
+
+const shells = [];
+const MAX_SHELLS = 8;          // 同時表示は控えめ
+const TOTAL_SPAWN_LIMIT = 20;  // 総出現上限（ご要望）
+const MIN_DIST   = 90;
+const SPAWN_P    = 0.18;       // 出現確率も少し控えめ
+
+function tooClose(x,y){ return shells.some(s=>Math.hypot(s.x-x,s.y-y)<MIN_DIST); }
+function avoidBucket(x,y){
+  const b=bucket.getBoundingClientRect();
+  const cx=(b.left+b.right)/2, cy=(b.top+b.bottom)/2;
+  return Math.hypot(cx-x,cy-y)<120;
+}
+
+function maybeSpawnNear(x,y){
+  if(shells.length>=MAX_SHELLS) return;
+  if(spawnedTotal>=TOTAL_SPAWN_LIMIT) return;
+  if(Math.random()>SPAWN_P) return;
+  let px = x + (Math.random()*2-1)*90;
+  let py = y + (Math.random()*2-1)*90;
+  px = Math.max(60, Math.min(innerWidth -60, px));
+  py = Math.max(100, Math.min(innerHeight-100, py));
+  if(tooClose(px,py) || avoidBucket(px,py)) return;
+
+  const rare = Math.random()<0.18;
+  const src  = (rare?RARE:COMMON)[Math.floor(Math.random()*(rare?RARE.length:COMMON.length))];
+  const key  = src.split('/').pop().replace('.png','');
+
+  const el = document.createElement('div');
+  el.className = 'shell'; el.style.left = px + 'px'; el.style.top = py + 'px';
+  el.style.backgroundImage = `url(${src})`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  enableShellDrag(el, key);
+  shells.push({el,x:px,y:py,key});
+  spawnedTotal++; store.set('whoai.spawned', spawnedTotal);
+}
+
+function enableShellDrag(el, key){
+  let pid=null, dx=0, dy=0;
+  el.addEventListener('pointerdown', e=>{
+    e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid);
+    dx = e.clientX - parseFloat(el.style.left); dy = e.clientY - parseFloat(el.style.top);
+    el.classList.add('drag');
+  }, {passive:false});
+
+  el.addEventListener('pointermove', e=>{
+    if(e.pointerId!==pid) return; e.preventDefault();
+    el.style.left = (e.clientX - dx) + 'px'; el.style.top  = (e.clientY - dy) + 'px';
+  }, {passive:false});
+
+  function finish(e){
+    if(e.pointerId!==pid) return; e.preventDefault();
+    el.classList.remove('drag'); el.releasePointerCapture(pid); pid=null;
+    const b=bucket.getBoundingClientRect(); const s=el.getBoundingClientRect();
+    const hit = !(s.right<b.left || s.left>b.right || s.bottom<b.top || s.top>b.bottom);
+    if(hit){
+      el.remove();
+      const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1);
+      counter.textContent = ++count; persistCount();
+      updateCollection(key, 1);
+      showBubble( Math.random()<0.2 ? 'レアだよ！' : 'やったね！' );
+      refreshCollectionView();
+    }
+  }
+  el.addEventListener('pointerup', finish,   {passive:false});
+  el.addEventListener('pointercancel', finish,{passive:false});
+}
+
+/* =============================
+   コレクション
+============================= */
+const collectionPanel  = $('#collectionPanel');
+const colCommon        = $('#colCommon');
+const colRare          = $('#colRare');
+const collectionSummary= $('#collectionSummary');
+$('#colClose').onclick = ()=> closePanel(collectionPanel);
+
+const ALL_ITEMS = [...COMMON, ...RARE].map(src=>({ key:src.split('/').pop().replace('.png',''), src }));
+
+function getCollection(){ return store.get('whoai.collection', {}); }
+function setCollection(obj){ store.set('whoai.collection', obj); }
+function updateCollection(key, delta){
+  const col = getCollection(); col[key] = (col[key]||0) + (delta||0); if(col[key]<0) col[key]=0; setCollection(col);
+}
+function totalCollected(){ return Object.values(getCollection()).reduce((a,b)=>a+b,0); }
+
+function buildCollectionGrid(){
+  // Common
+  colCommon.innerHTML='';
+  COMMON.forEach(src=>{
+    const key = src.split('/').pop().replace('.png','');
+    const slot = document.createElement('div'); slot.className='slot';
+    slot.innerHTML = `
+      <div class="thumb" style="background-image:url(${src})"></div>
+      <div class="name">${key}</div>
+      <div class="count">×<span data-key="${key}">0</span></div>`;
+    colCommon.appendChild(slot);
+  });
+  // Rare
+  colRare.innerHTML='';
+  RARE.forEach(src=>{
+    const key = src.split('/').pop().replace('.png','');
+    const slot = document.createElement('div'); slot.className='slot';
+    slot.innerHTML = `
+      <div class="thumb" style="background-image:url(${src})"></div>
+      <div class="name">${key}</div>
+      <div class="count">×<span data-key="${key}">0</span></div>`;
+    colRare.appendChild(slot);
+  });
+}
+
+function refreshCollectionView(){
+  const col = getCollection();
+  const totalKinds = ALL_ITEMS.length;
+  const ownedKinds = ALL_ITEMS.filter(x=> (col[x.key]||0)>0 ).length;
+  const total = totalCollected();
+  collectionSummary.textContent = `入手種: ${ownedKinds}/${totalKinds}　総数: ${total}　コンプ率: ${Math.round(ownedKinds/totalKinds*100)}%`;
+  $$('#collectionPanel .slot').forEach(slot=>{
+    const span = slot.querySelector('.count span');
+    const key = span && span.getAttribute('data-key');
+    const c = (col[key]||0);
+    span.textContent = c;
+    slot.classList.toggle('has', c>0);
+  });
+}
+
+function openCollection(){
+  if(!colCommon.dataset.ready){ buildCollectionGrid(); colCommon.dataset.ready='1'; }
+  refreshCollectionView();
+  openPanel(collectionPanel);
+}
+
+/* =============================
+   夜：LINE風チャット（半透明バルーン）
+============================= */
+const nightPanel = $('#nightPanel');
+const chatLog    = $('#chatLog');
+const chatInput  = $('#chatInput');
+const chatSend   = $('#chatSend');
+$('#nightClose').onclick = ()=> closePanel(nightPanel);
+
+function addMsg(role,text){
+  const div=document.createElement('div');
+  div.className='msg '+(role==='user'?'me':'ai');
+  div.textContent=text; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function openNight(){
+  openPanel(nightPanel);
+  if(!chatLog.dataset.greet){ addMsg('ai','夜空がきれいだね。今日はどんな一日だった？'); chatLog.dataset.greet='1'; }
+}
+
+chatSend.onclick = async ()=>{
+  const text = chatInput.value.trim(); if(!text) return;
+  addMsg('user', text); chatInput.value='';
+  try{
+    if (window.WHOAI_TALK && WHOAI_TALK.talk) {
+      const { reply } = await WHOAI_TALK.talk(text, { state:{ totalCollected:count } });
+      addMsg('ai', reply || '…');
+    } else {
+      addMsg('ai', `（ローカル）${text}。夜風が気持ちいいね。`);
+    }
+  }catch(e){ addMsg('ai','（接続できませんでした）'); console.error(e); }
+};
+chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); chatSend.click(); } });
+
+/* =============================
+   パネル共通
+============================= */
+function openPanel(p){ p.classList.add('show'); p.setAttribute('aria-hidden','false'); }
+function closePanel(p){ p.classList.remove('show'); p.setAttribute('aria-hidden','true'); }
+
+/* =============================
+   シーン遷移/ボタン
+============================= */
+let wanderTimer=null;
+function ensureWander(){ if(wanderTimer) return; wanderTimer = setInterval(()=>{
+  whoaiWrap.style.left   = (8 + Math.random()*72) + 'vw';
+  whoaiWrap.style.bottom = (10 + Math.random()*60) + 'vh';
+}, 5000); }
+
+$('#btnNight').onclick = ()=>{ scene('night'); say('夜の海。話そうか？'); openNight(); };
+$('#btnReset').onclick = ()=>{
+  count = 0; persistCount(); counter.textContent = 0; $$('.shell').forEach(e=>e.remove());
+  spawnedTotal = 0; store.set('whoai.spawned', spawnedTotal);
+  if(currentScene==='beach'){ resizeSand(); }
+  say('リセットしたよ');
+};
+$('#btnAccessory').onclick  = ()=>{ if(getComputedStyle(whoaiWrap).display==='none') selectChar(store.get('whoai.char','./public/assets/stage1/green_open.png')); openAccessory(); };
+$('#btnCollection').onclick = ()=> openCollection();
+
+/* =============================
+   永続化（収集数等）
+============================= */
+function persistCount(){ store.set('whoai.count', count); }
+
+/* =============================
+   初期化
+============================= */
+function init(){
+  scene('sunrise'); // 最初は朝日のみ。砂は非表示
+  say('朝日がきれいだね');
+  // 復元
+  const savedChar = store.get('whoai.char', null);
+  if(savedChar){ whoai.src = savedChar; whoaiWrap.style.display='block'; restoreAccessories(); }
+  count = store.get('whoai.count', 0) || 0; counter.textContent = count;
+  spawnedTotal = store.get('whoai.spawned', 0) || 0;
+}
+addEventListener('resize', ()=>{ if(currentScene==='beach') resizeSand(); });
 init();
 </script>
 </body>
