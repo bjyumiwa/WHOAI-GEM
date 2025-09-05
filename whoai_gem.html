@@ -16,7 +16,7 @@ DEPENDENCY:
 - ./api/talk.js  (provides window.WHOAI_TALK.talk(text, {state}) )
 -->
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-lang="ja">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
@@ -30,9 +30,15 @@ DEPENDENCY:
       opacity:0;transition:opacity .7s}
   .bg.show{opacity:1}
 
+  /* トップバー */
+  #topbar{position:fixed;left:0;right:0;top:0;z-index:40;display:flex;justify-content:space-between;
+    padding:8px 10px;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));}
+  #topbar .left,#topbar .right{display:flex;gap:8px}
+  #topbar button{padding:6px 10px;border:none;border-radius:10px;background:rgba(255,255,255,.9);color:#111;cursor:pointer}
+
   /* ヒーロー（最初の朝日画面） */
   #hero{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;background:rgba(0,0,0,.15)}
-  #hero h1{font-size:clamp(20px,4vw,36px);margin:0;text-shadow:0 2px 8px rgba(0,0,0,.45)}
+  #hero h1{font-size:clamp(20px,4vw,36px);margin:0 16px;text-shadow:0 2px 8px rgba(0,0,0,.45)}
   .heroBtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
   .heroBtns button{padding:12px 18px;border:none;border-radius:12px;cursor:pointer;font-weight:700}
 
@@ -72,7 +78,7 @@ DEPENDENCY:
   .shell.drag{transform:translate(-50%,-50%) scale(1.04)}
 
   /* トースト */
-  #toast{position:fixed;right:10px;top:10px;z-index:20;
+  #toast{position:fixed;right:10px;top:42px;z-index:20;
          background:rgba(255,255,255,.92);color:#111;
          padding:8px 12px;border-radius:10px;font-size:14px;min-width:180px}
 
@@ -120,9 +126,19 @@ DEPENDENCY:
   <div id="bg-beach"   class="bg"        style="background-image:url('./public/bg/beach_day.jpg')"></div>
   <div id="bg-night"   class="bg"        style="background-image:url('./public/bg/night_beach.jpg')"></div>
 
+  <!-- トップバー：About / 言語切替 -->
+  <div id="topbar">
+    <div class="left">
+      <button id="btnAbout">研究について</button>
+    </div>
+    <div class="right">
+      <button id="btnLang">EN</button>
+    </div>
+  </div>
+
   <!-- 最初の朝日画面（スタート/続きから） -->
   <div id="hero">
-    <h1>朝日の海へようこそ</h1>
+    <h1 id="heroTitle">朝日の海へようこそ</h1>
     <div class="heroBtns">
       <button id="btnHeroStart">スタート</button>
       <button id="btnHeroContinue">続きから</button>
@@ -159,7 +175,7 @@ DEPENDENCY:
   <!-- キャラ選択 -->
   <div id="charPanel" class="panel" aria-hidden="true">
     <div class="card">
-      <h2>キャラを選んでね</h2>
+      <h2 id="charTitle">キャラを選んでね</h2>
       <div id="charGrid" class="grid"></div>
       <div style="text-align:right;margin-top:8px"><button id="charClose">閉じる</button></div>
     </div>
@@ -168,7 +184,7 @@ DEPENDENCY:
   <!-- 夜の会話 -->
   <div id="nightPanel" class="panel" aria-hidden="true">
     <div class="card">
-      <h2>また明日</h2>
+      <h2 id="nightTitle">また明日</h2>
       <div id="chatLog"></div>
       <div id="chatCtrl">
         <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
@@ -181,7 +197,7 @@ DEPENDENCY:
   <!-- アクセサリーパネル -->
   <div id="accessoryPanel" class="panel" aria-hidden="true">
     <div class="card">
-      <h2>アクセサリー</h2>
+      <h2 id="accTitle">アクセサリー</h2>
       <div id="accList" class="grid"></div>
       <div style="text-align:right;margin-top:8px"><button id="accClose">閉じる</button></div>
     </div>
@@ -190,11 +206,11 @@ DEPENDENCY:
   <!-- コレクションパネル -->
   <div id="collectionPanel" class="panel" aria-hidden="true">
     <div class="card">
-      <h2>コレクション</h2>
+      <h2 id="colTitle">コレクション</h2>
       <div id="collectionSummary" style="margin:6px 0 12px;color:#333"></div>
-      <h3>よくある貝</h3>
+      <h3 id="colCommonTitle">よくある貝</h3>
       <div id="colCommon" class="grid" style="margin-bottom:12px"></div>
-      <h3>レア</h3>
+      <h3 id="colRareTitle">レア</h3>
       <div id="colRare" class="grid"></div>
       <div style="text-align:right;margin-top:8px"><button id="colClose">閉じる</button></div>
     </div>
@@ -204,6 +220,46 @@ DEPENDENCY:
   <script src="./api/talk.js"></script>
 
 <script>
+/* =============================
+   i18n（日本語/英語）
+============================= */
+const I18N = {
+  ja: {
+    about: '研究について', langBtn: 'EN', heroTitle: '朝日の海へようこそ', start: 'スタート', cont: '続きから',
+    chooseChar: 'キャラを選んでね', toastSunrise: '朝日がきれいだね',
+    toNight: '夜へ', accessory: 'アクセサリー', collection: 'コレクション', reset: 'リセット',
+    nightTitle: 'また明日', nightPH: '夜空を見ながら、何を話そう？', send: '送信', close: '閉じる',
+    colTitle: 'コレクション', colCommon: 'よくある貝', colRare: 'レア',
+    beachGuide: '砂の中に貝があるよ。なでて探してね', nightGuide: '夜の海。話そうか？',
+  },
+  en: {
+    about: 'About this research', langBtn: '日本語', heroTitle: 'Welcome to the Sunrise Shore', start: 'Start', cont: 'Continue',
+    chooseChar: 'Choose your character', toastSunrise: 'Beautiful sunrise',
+    toNight: 'To Night', accessory: 'Accessories', collection: 'Collection', reset: 'Reset',
+    nightTitle: 'See you tomorrow', nightPH: 'What shall we talk about under the night sky?', send: 'Send', close: 'Close',
+    colTitle: 'Collection', colCommon: 'Common Shells', colRare: 'Rare',
+    beachGuide: 'Shells hide in the sand. Swipe to find them.', nightGuide: "It's night by the sea. Shall we talk?",
+  }
+};
+
+function setLang(lang){
+  const L = I18N[lang]||I18N.ja; document.documentElement.setAttribute('lang', lang); document.documentElement.dataset.lang = lang; localStorage.setItem('whoai.lang', lang);
+  // Topbar
+  $('#btnAbout').textContent = L.about; $('#btnLang').textContent = L.langBtn;
+  // Hero
+  $('#heroTitle').textContent = L.heroTitle; $('#btnHeroStart').textContent = L.start; $('#btnHeroContinue').textContent = L.cont;
+  // Toast default
+  say(L.toastSunrise);
+  // Panels/buttons
+  $('#btnNight').textContent = L.toNight; $('#btnAccessory').textContent = L.accessory; $('#btnCollection').textContent = L.collection; $('#btnReset').textContent = L.reset;
+  $('#charTitle').textContent = L.chooseChar; $('#nightTitle').textContent = L.nightTitle; $('#chatInput').placeholder = L.nightPH; $('#chatSend').textContent = L.send;
+  $('#accTitle').textContent = L.accessory; $('#colTitle').textContent = L.colTitle; $('#colCommonTitle').textContent = L.colCommon; $('#colRareTitle').textContent = L.colRare;
+  // Close buttons inside panels left as "閉じる/Close" static? We can set them too if needed.
+  $$('#charPanel button, #nightPanel button, #accessoryPanel button, #collectionPanel button').forEach(b=>{ if(b.id.endsWith('Close')) b.textContent = L.close; });
+}
+
+function toggleLang(){ const now = document.documentElement.dataset.lang||'ja'; setLang(now==='ja'?'en':'ja'); }
+
 /* =============================
    ユーティリティ/状態管理
 ============================= */
@@ -219,9 +275,11 @@ function scene(name){
   (bg[name]||bg.sunrise).classList.add('show');
   currentScene = name;
   store.set('whoai.lastScene', currentScene);
-  if(name==='beach'){ sand.classList.add('show'); resizeSand(); }
-  else{ sand.classList.remove('show'); }
+  if(name==='beach'){ sand.classList.add('show'); resizeSand(); say(I18N[getLang()].beachGuide); }
+  else{ sand.classList.remove('show'); if(name==='night') say(I18N[getLang()].nightGuide); }
 }
+
+function getLang(){ return localStorage.getItem('whoai.lang')||'ja'; }
 
 // 永続化
 const store = {
@@ -230,22 +288,20 @@ const store = {
 };
 
 /* =============================
-   ヒーロー開始/続きから
+   ヒーロー開始/続きから + About/言語
 ============================= */
 const hero      = $('#hero');
 const gameUi    = $('#gameUi');
-$('#btnHeroStart').onclick = ()=>{ // スタート→キャラ選択→自動でビーチ
-  openCharPanel();
-  say('キャラを選んでね');
-};
+$('#btnHeroStart').onclick = ()=>{ openCharPanel(); };
 $('#btnHeroContinue').onclick = ()=>{ continueGame(); };
+$('#btnAbout').onclick = ()=>{ location.href = './about.html'; };
+$('#btnLang').onclick  = ()=>{ toggleLang(); };
 
 function startGameWithChar(src){
   selectChar(src);
   hero.style.display='none';
   gameUi.classList.add('show');
   scene('beach');
-  say('砂の中に貝があるよ。なでて探してね');
 }
 
 function continueGame(){
@@ -254,8 +310,8 @@ function continueGame(){
   whoai.src = useChar; whoaiWrap.style.display='block'; ensureWander(); restoreAccessories();
   hero.style.display='none'; gameUi.classList.add('show');
   const last = store.get('whoai.lastScene','beach');
-  if(last==='night'){ scene('night'); openNight(); say('夜の海。話そうか？'); }
-  else{ scene('beach'); say('砂の中に貝があるよ。なでて探してね'); }
+  if(last==='night'){ scene('night'); openNight(); }
+  else{ scene('beach'); }
 }
 
 /* =============================
@@ -463,7 +519,7 @@ const chatSend   = $('#chatSend');
 $('#nightClose').onclick = ()=> closePanel(nightPanel);
 
 function addMsg(role,text){ const div=document.createElement('div'); div.className='msg '+(role==='user'?'me':'ai'); div.textContent=text; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight; }
-function openNight(){ openPanel(nightPanel); if(!chatLog.dataset.greet){ addMsg('ai','夜空がきれいだね。今日はどんな一日だった？'); chatLog.dataset.greet='1'; } }
+function openNight(){ openPanel(nightPanel); if(!chatLog.dataset.greet){ addMsg('ai', I18N[getLang()].nightGuide); chatLog.dataset.greet='1'; } }
 chatSend.onclick = async ()=>{ const text = chatInput.value.trim(); if(!text) return; addMsg('user', text); chatInput.value=''; try{ if (window.WHOAI_TALK && WHOAI_TALK.talk) { const { reply } = await WHOAI_TALK.talk(text, { state:{ totalCollected:count } }); addMsg('ai', reply || '…'); } else { addMsg('ai', `（ローカル）${text}。夜風が気持ちいいね。`); } }catch(e){ addMsg('ai','（接続できませんでした）'); console.error(e); } };
 chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); chatSend.click(); } });
 
@@ -479,7 +535,7 @@ function closePanel(p){ p.classList.remove('show'); p.setAttribute('aria-hidden'
 let wanderTimer=null;
 function ensureWander(){ if(wanderTimer) return; wanderTimer = setInterval(()=>{ whoaiWrap.style.left=(8+Math.random()*72)+'vw'; whoaiWrap.style.bottom=(10+Math.random()*60)+'vh'; }, 5000); }
 
-$('#btnNight').onclick = ()=>{ scene('night'); say('夜の海。話そうか？'); openNight(); };
+$('#btnNight').onclick = ()=>{ scene('night'); openNight(); };
 $('#btnReset').onclick = ()=>{ count=0; persistCount(); counter.textContent=0; $$('.shell').forEach(e=>e.remove()); spawnedTotal=0; store.set('whoai.spawned', spawnedTotal); if(currentScene==='beach'){ resizeSand(); } say('リセットしたよ'); };
 $('#btnAccessory').onclick  = ()=>{ if(getComputedStyle(whoaiWrap).display==='none') selectChar(store.get('whoai.char','./public/assets/stage1/green_open.png')); openAccessory(); };
 $('#btnCollection').onclick = ()=> openCollection();
@@ -493,8 +549,10 @@ function persistCount(){ store.set('whoai.count', count); }
    初期化
 ============================= */
 function init(){
-  scene('sunrise'); // 朝日のみ表示
-  say('朝日がきれいだね');
+  // 言語復元
+  setLang(getLang());
+  scene('sunrise');
+  // 復元
   const savedChar = store.get('whoai.char', null);
   if(savedChar){ whoai.src = savedChar; whoaiWrap.style.display='block'; restoreAccessories(); }
   count = store.get('whoai.count', 0) || 0; counter.textContent = count;
@@ -523,7 +581,7 @@ DEPENDENCY:
 - ./api/talk.js  (provides window.WHOAI_TALK.talk(text, {state}) )
 -->
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-lang="ja">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
@@ -537,9 +595,15 @@ DEPENDENCY:
       opacity:0;transition:opacity .7s}
   .bg.show{opacity:1}
 
+  /* トップバー */
+  #topbar{position:fixed;left:0;right:0;top:0;z-index:40;display:flex;justify-content:space-between;
+    padding:8px 10px;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));}
+  #topbar .left,#topbar .right{display:flex;gap:8px}
+  #topbar button{padding:6px 10px;border:none;border-radius:10px;background:rgba(255,255,255,.9);color:#111;cursor:pointer}
+
   /* ヒーロー（最初の朝日画面） */
   #hero{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;background:rgba(0,0,0,.15)}
-  #hero h1{font-size:clamp(20px,4vw,36px);margin:0;text-shadow:0 2px 8px rgba(0,0,0,.45)}
+  #hero h1{font-size:clamp(20px,4vw,36px);margin:0 16px;text-shadow:0 2px 8px rgba(0,0,0,.45)}
   .heroBtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
   .heroBtns button{padding:12px 18px;border:none;border-radius:12px;cursor:pointer;font-weight:700}
 
@@ -579,7 +643,7 @@ DEPENDENCY:
   .shell.drag{transform:translate(-50%,-50%) scale(1.04)}
 
   /* トースト */
-  #toast{position:fixed;right:10px;top:10px;z-index:20;
+  #toast{position:fixed;right:10px;top:42px;z-index:20;
          background:rgba(255,255,255,.92);color:#111;
          padding:8px 12px;border-radius:10px;font-size:14px;min-width:180px}
 
@@ -627,9 +691,19 @@ DEPENDENCY:
   <div id="bg-beach"   class="bg"        style="background-image:url('./public/bg/beach_day.jpg')"></div>
   <div id="bg-night"   class="bg"        style="background-image:url('./public/bg/night_beach.jpg')"></div>
 
+  <!-- トップバー：About / 言語切替 -->
+  <div id="topbar">
+    <div class="left">
+      <button id="btnAbout">研究について</button>
+    </div>
+    <div class="right">
+      <button id="btnLang">EN</button>
+    </div>
+  </div>
+
   <!-- 最初の朝日画面（スタート/続きから） -->
   <div id="hero">
-    <h1>朝日の海へようこそ</h1>
+    <h1 id="heroTitle">朝日の海へようこそ</h1>
     <div class="heroBtns">
       <button id="btnHeroStart">スタート</button>
       <button id="btnHeroContinue">続きから</button>
@@ -666,7 +740,7 @@ DEPENDENCY:
   <!-- キャラ選択 -->
   <div id="charPanel" class="panel" aria-hidden="true">
     <div class="card">
-      <h2>キャラを選んでね</h2>
+      <h2 id="charTitle">キャラを選んでね</h2>
       <div id="charGrid" class="grid"></div>
       <div style="text-align:right;margin-top:8px"><button id="charClose">閉じる</button></div>
     </div>
@@ -675,7 +749,7 @@ DEPENDENCY:
   <!-- 夜の会話 -->
   <div id="nightPanel" class="panel" aria-hidden="true">
     <div class="card">
-      <h2>また明日</h2>
+      <h2 id="nightTitle">また明日</h2>
       <div id="chatLog"></div>
       <div id="chatCtrl">
         <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
@@ -688,7 +762,7 @@ DEPENDENCY:
   <!-- アクセサリーパネル -->
   <div id="accessoryPanel" class="panel" aria-hidden="true">
     <div class="card">
-      <h2>アクセサリー</h2>
+      <h2 id="accTitle">アクセサリー</h2>
       <div id="accList" class="grid"></div>
       <div style="text-align:right;margin-top:8px"><button id="accClose">閉じる</button></div>
     </div>
@@ -697,11 +771,11 @@ DEPENDENCY:
   <!-- コレクションパネル -->
   <div id="collectionPanel" class="panel" aria-hidden="true">
     <div class="card">
-      <h2>コレクション</h2>
+      <h2 id="colTitle">コレクション</h2>
       <div id="collectionSummary" style="margin:6px 0 12px;color:#333"></div>
-      <h3>よくある貝</h3>
+      <h3 id="colCommonTitle">よくある貝</h3>
       <div id="colCommon" class="grid" style="margin-bottom:12px"></div>
-      <h3>レア</h3>
+      <h3 id="colRareTitle">レア</h3>
       <div id="colRare" class="grid"></div>
       <div style="text-align:right;margin-top:8px"><button id="colClose">閉じる</button></div>
     </div>
@@ -711,6 +785,46 @@ DEPENDENCY:
   <script src="./api/talk.js"></script>
 
 <script>
+/* =============================
+   i18n（日本語/英語）
+============================= */
+const I18N = {
+  ja: {
+    about: '研究について', langBtn: 'EN', heroTitle: '朝日の海へようこそ', start: 'スタート', cont: '続きから',
+    chooseChar: 'キャラを選んでね', toastSunrise: '朝日がきれいだね',
+    toNight: '夜へ', accessory: 'アクセサリー', collection: 'コレクション', reset: 'リセット',
+    nightTitle: 'また明日', nightPH: '夜空を見ながら、何を話そう？', send: '送信', close: '閉じる',
+    colTitle: 'コレクション', colCommon: 'よくある貝', colRare: 'レア',
+    beachGuide: '砂の中に貝があるよ。なでて探してね', nightGuide: '夜の海。話そうか？',
+  },
+  en: {
+    about: 'About this research', langBtn: '日本語', heroTitle: 'Welcome to the Sunrise Shore', start: 'Start', cont: 'Continue',
+    chooseChar: 'Choose your character', toastSunrise: 'Beautiful sunrise',
+    toNight: 'To Night', accessory: 'Accessories', collection: 'Collection', reset: 'Reset',
+    nightTitle: 'See you tomorrow', nightPH: 'What shall we talk about under the night sky?', send: 'Send', close: 'Close',
+    colTitle: 'Collection', colCommon: 'Common Shells', colRare: 'Rare',
+    beachGuide: 'Shells hide in the sand. Swipe to find them.', nightGuide: "It's night by the sea. Shall we talk?",
+  }
+};
+
+function setLang(lang){
+  const L = I18N[lang]||I18N.ja; document.documentElement.setAttribute('lang', lang); document.documentElement.dataset.lang = lang; localStorage.setItem('whoai.lang', lang);
+  // Topbar
+  $('#btnAbout').textContent = L.about; $('#btnLang').textContent = L.langBtn;
+  // Hero
+  $('#heroTitle').textContent = L.heroTitle; $('#btnHeroStart').textContent = L.start; $('#btnHeroContinue').textContent = L.cont;
+  // Toast default
+  say(L.toastSunrise);
+  // Panels/buttons
+  $('#btnNight').textContent = L.toNight; $('#btnAccessory').textContent = L.accessory; $('#btnCollection').textContent = L.collection; $('#btnReset').textContent = L.reset;
+  $('#charTitle').textContent = L.chooseChar; $('#nightTitle').textContent = L.nightTitle; $('#chatInput').placeholder = L.nightPH; $('#chatSend').textContent = L.send;
+  $('#accTitle').textContent = L.accessory; $('#colTitle').textContent = L.colTitle; $('#colCommonTitle').textContent = L.colCommon; $('#colRareTitle').textContent = L.colRare;
+  // Close buttons inside panels left as "閉じる/Close" static? We can set them too if needed.
+  $$('#charPanel button, #nightPanel button, #accessoryPanel button, #collectionPanel button').forEach(b=>{ if(b.id.endsWith('Close')) b.textContent = L.close; });
+}
+
+function toggleLang(){ const now = document.documentElement.dataset.lang||'ja'; setLang(now==='ja'?'en':'ja'); }
+
 /* =============================
    ユーティリティ/状態管理
 ============================= */
@@ -726,9 +840,11 @@ function scene(name){
   (bg[name]||bg.sunrise).classList.add('show');
   currentScene = name;
   store.set('whoai.lastScene', currentScene);
-  if(name==='beach'){ sand.classList.add('show'); resizeSand(); }
-  else{ sand.classList.remove('show'); }
+  if(name==='beach'){ sand.classList.add('show'); resizeSand(); say(I18N[getLang()].beachGuide); }
+  else{ sand.classList.remove('show'); if(name==='night') say(I18N[getLang()].nightGuide); }
 }
+
+function getLang(){ return localStorage.getItem('whoai.lang')||'ja'; }
 
 // 永続化
 const store = {
@@ -737,22 +853,20 @@ const store = {
 };
 
 /* =============================
-   ヒーロー開始/続きから
+   ヒーロー開始/続きから + About/言語
 ============================= */
 const hero      = $('#hero');
 const gameUi    = $('#gameUi');
-$('#btnHeroStart').onclick = ()=>{ // スタート→キャラ選択→自動でビーチ
-  openCharPanel();
-  say('キャラを選んでね');
-};
+$('#btnHeroStart').onclick = ()=>{ openCharPanel(); };
 $('#btnHeroContinue').onclick = ()=>{ continueGame(); };
+$('#btnAbout').onclick = ()=>{ location.href = './about.html'; };
+$('#btnLang').onclick  = ()=>{ toggleLang(); };
 
 function startGameWithChar(src){
   selectChar(src);
   hero.style.display='none';
   gameUi.classList.add('show');
   scene('beach');
-  say('砂の中に貝があるよ。なでて探してね');
 }
 
 function continueGame(){
@@ -761,8 +875,8 @@ function continueGame(){
   whoai.src = useChar; whoaiWrap.style.display='block'; ensureWander(); restoreAccessories();
   hero.style.display='none'; gameUi.classList.add('show');
   const last = store.get('whoai.lastScene','beach');
-  if(last==='night'){ scene('night'); openNight(); say('夜の海。話そうか？'); }
-  else{ scene('beach'); say('砂の中に貝があるよ。なでて探してね'); }
+  if(last==='night'){ scene('night'); openNight(); }
+  else{ scene('beach'); }
 }
 
 /* =============================
@@ -970,7 +1084,7 @@ const chatSend   = $('#chatSend');
 $('#nightClose').onclick = ()=> closePanel(nightPanel);
 
 function addMsg(role,text){ const div=document.createElement('div'); div.className='msg '+(role==='user'?'me':'ai'); div.textContent=text; chatLog.appendChild(div); chatLog.scrollTop = chatLog.scrollHeight; }
-function openNight(){ openPanel(nightPanel); if(!chatLog.dataset.greet){ addMsg('ai','夜空がきれいだね。今日はどんな一日だった？'); chatLog.dataset.greet='1'; } }
+function openNight(){ openPanel(nightPanel); if(!chatLog.dataset.greet){ addMsg('ai', I18N[getLang()].nightGuide); chatLog.dataset.greet='1'; } }
 chatSend.onclick = async ()=>{ const text = chatInput.value.trim(); if(!text) return; addMsg('user', text); chatInput.value=''; try{ if (window.WHOAI_TALK && WHOAI_TALK.talk) { const { reply } = await WHOAI_TALK.talk(text, { state:{ totalCollected:count } }); addMsg('ai', reply || '…'); } else { addMsg('ai', `（ローカル）${text}。夜風が気持ちいいね。`); } }catch(e){ addMsg('ai','（接続できませんでした）'); console.error(e); } };
 chatInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); chatSend.click(); } });
 
@@ -986,7 +1100,7 @@ function closePanel(p){ p.classList.remove('show'); p.setAttribute('aria-hidden'
 let wanderTimer=null;
 function ensureWander(){ if(wanderTimer) return; wanderTimer = setInterval(()=>{ whoaiWrap.style.left=(8+Math.random()*72)+'vw'; whoaiWrap.style.bottom=(10+Math.random()*60)+'vh'; }, 5000); }
 
-$('#btnNight').onclick = ()=>{ scene('night'); say('夜の海。話そうか？'); openNight(); };
+$('#btnNight').onclick = ()=>{ scene('night'); openNight(); };
 $('#btnReset').onclick = ()=>{ count=0; persistCount(); counter.textContent=0; $$('.shell').forEach(e=>e.remove()); spawnedTotal=0; store.set('whoai.spawned', spawnedTotal); if(currentScene==='beach'){ resizeSand(); } say('リセットしたよ'); };
 $('#btnAccessory').onclick  = ()=>{ if(getComputedStyle(whoaiWrap).display==='none') selectChar(store.get('whoai.char','./public/assets/stage1/green_open.png')); openAccessory(); };
 $('#btnCollection').onclick = ()=> openCollection();
@@ -1000,8 +1114,10 @@ function persistCount(){ store.set('whoai.count', count); }
    初期化
 ============================= */
 function init(){
-  scene('sunrise'); // 朝日のみ表示
-  say('朝日がきれいだね');
+  // 言語復元
+  setLang(getLang());
+  scene('sunrise');
+  // 復元
   const savedChar = store.get('whoai.char', null);
   if(savedChar){ whoai.src = savedChar; whoaiWrap.style.display='block'; restoreAccessories(); }
   count = store.get('whoai.count', 0) || 0; counter.textContent = count;
