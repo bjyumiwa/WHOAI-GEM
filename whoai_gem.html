@@ -233,6 +233,89 @@
   <!-- 会話APIラッパ -->
   <script src="./web/talk.js"></script>
 <script>
+  /* ========== ストレージユーティリティ ========== */
+const store = {
+  get:(k,d)=>{ try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;} },
+  set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));}catch{} }
+};
+
+/* ========== シーン管理 ========== */
+const bg = { sunrise:$('#bg-sunrise'), beach:$('#bg-beach'), night:$('#bg-night') };
+let currentScene='sunrise';
+function scene(name){
+  Object.values(bg).forEach(e=>e.classList.remove('show'));
+  (bg[name]||bg.sunrise).classList.add('show');
+  currentScene=name;
+  store.set('whoai.lastScene',name);
+}
+
+/* ========== キャラ選択 ========== */
+const whoaiWrap=$('#whoaiWrap'), whoai=$('#whoai');
+const charPanel=$('#charPanel'), charGrid=$('#charGrid');
+$('#charClose').onclick=()=>closePanel(charPanel);
+
+const CHAR_LIST=[
+  'blue_closed.png','green_open.png','orange_closed.png','pink_closed.png','purple_closed.png',
+  'tane_green.png','tane_pink.png','tane_purple.png','tane_blue.png'
+].map(n=>`./public/assets/stage1/${n}`);
+
+function openCharPanel(){
+  if(!charGrid.dataset.ready){
+    CHAR_LIST.forEach(src=>{
+      const d=document.createElement('div');
+      d.className='choice';
+      d.innerHTML=`<img src="${src}" alt=""><div>${src.split('/').pop().replace('.png','')}</div>`;
+      d.onclick=()=>startGameWithChar(src);
+      charGrid.appendChild(d);
+    });
+    charGrid.dataset.ready='1';
+  }
+  openPanel(charPanel);
+}
+
+function startGameWithChar(src){
+  whoai.src=src;
+  whoaiWrap.style.display='block';
+  store.set('whoai.char',src);
+  closePanel(charPanel);
+  $('#hero').style.display='none';  // Hero隠す
+  $('#gameUi').classList.add('show');
+  scene('beach');                   // ビーチへ
+}
+
+/* ========== Heroボタン ========== */
+$('#btnHeroStart').onclick=()=>openCharPanel();
+$('#btnHeroContinue').onclick=()=>continueGame();
+$('#btnAbout').onclick=()=>location.href='about/';
+$('#btnLang').onclick=()=>toggleLang();
+
+function continueGame(){
+  const saved=store.get('whoai.char',null);
+  const last=store.get('whoai.lastScene','beach');
+  if(!saved){ openCharPanel(); return; }
+  whoai.src=saved; whoaiWrap.style.display='block';
+  $('#hero').style.display='none';
+  $('#gameUi').classList.add('show');
+  scene(last);
+}
+
+/* ========== 共通パネル操作 ========== */
+function openPanel(p){ p.classList.add('show'); p.setAttribute('aria-hidden','false'); }
+function closePanel(p){ p.classList.remove('show'); p.setAttribute('aria-hidden','true'); }
+
+/* ========== 初期化 ========== */
+function init(){
+  setLang(getLang());
+  scene('sunrise');
+  whoaiWrap.style.display='none';
+  $('#gameUi').classList.remove('show');
+  const hasSave=!!store.get('whoai.char',null);
+  const btnCont=$('#btnHeroContinue');
+  btnCont.disabled=!hasSave;
+  btnCont.style.opacity=hasSave?'1':'.5';
+}
+init();
+
 /* ========== 多言語対応 ========== */
 const I18N = {
   ja:{about:'研究について',langBtn:'EN',heroTitle:'朝日の海へようこそ',start:'スタート',cont:'続きから',
