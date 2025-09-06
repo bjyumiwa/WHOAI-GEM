@@ -6,13 +6,14 @@
   <title>WHOAI Gem</title>
   <style>
     html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
-      font-family:system-ui,"Noto Sans JP",sans-serif;touch-action:none;overscroll-behavior:none}
+      font-family:system-ui,"Noto Sans JP","Noto Sans",Arial,sans-serif;
+      touch-action:none;overscroll-behavior:none}
     .bg{position:fixed;inset:0;background-size:cover;background-position:center;
       opacity:0;transition:opacity .7s}
     .bg.show{opacity:1}
 
     /* Topbar */
-    #topbar{position:fixed;left:0;right:0;top:0;z-index:40;display:flex;justify-content:space-between;
+    #topbar{position:fixed;left:0;right:0;top:0;z-index:50;display:flex;justify-content:space-between;
       align-items:center;padding:8px 10px;
       background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0))}
     #topbar .left,#topbar .right{display:flex;gap:8px}
@@ -37,13 +38,13 @@
       box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:.18s;white-space:nowrap}
     .bubble.show{opacity:1;transform:translate(-50%,-12px)}
 
-    /* アクセサリー調整 */
+    /* アクセサリー位置/サイズ（帽子は低めに） */
     .acc{position:absolute;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:2}
-    .acc.knit_hat{top:12%;width:58%;}
-    .acc.straw_hat{top:9%;width:60%;}
-    .acc.sunglasses{top:42%;width:56%;}
-    .acc.ribbon_yellow{top:18%;left:60%;width:42%;}
-    .acc.star_yellow{top:23%;left:65%;width:40%;}
+    .acc.knit_hat{top:14%;width:58%}
+    .acc.straw_hat{top:12%;width:60%}
+    .acc.sunglasses{top:42%;width:56%}
+    .acc.ribbon_yellow{top:20%;left:60%;width:42%}
+    .acc.star_yellow{top:23%;left:65%;width:40%}
 
     /* バケツ */
     #bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(74px,14vw,160px);display:none}
@@ -73,7 +74,7 @@
     .ui button{padding:8px 14px;border:none;border-radius:10px;cursor:pointer}
 
     /* パネル共通 */
-    .panel{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.55);
+    .panel{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);
       display:none;align-items:center;justify-content:center}
     .panel.show{display:flex}
     .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,720px)}
@@ -159,6 +160,36 @@
   <div id="nightPanel" class="panel" aria-hidden="true">
     <div class="card">
       <h2 id="nightTitle">また明日</h2>
+
+      <!-- 会話前の設定（キャラ/名前交換：簡易版表示だけ） -->
+      <div id="preChat" style="display:flex;gap:12px;flex-wrap:wrap;margin:6px 0 10px">
+        <fieldset style="flex:1;min-width:240px;border:1px solid #ddd;border-radius:10px;padding:10px">
+          <legend style="font-weight:700;padding:0 6px">会話キャラ</legend>
+          <label><input type="radio" name="persona" value="random" checked> ランダム</label>
+          <label style="margin-left:8px"><input type="radio" name="persona" value="元気"> 元気</label>
+          <label style="margin-left:8px"><input type="radio" name="persona" value="静寂"> 静寂</label>
+          <label style="margin-left:8px"><input type="radio" name="persona" value="情熱"> 情熱</label>
+          <label style="margin-left:8px"><input type="radio" name="persona" value="創造"> 創造</label>
+        </fieldset>
+        <fieldset style="flex:1;min-width:260px;border:1px solid #ddd;border-radius:10px;padding:10px">
+          <legend style="font-weight:700;padding:0 6px">名前（レア貝2個と交換）</legend>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+            <input id="nameInput" type="text" maxlength="16" placeholder="なまえを入力"
+                   style="flex:1;padding:8px;border-radius:10px;border:1px solid #ccc">
+            <button id="btnNameTrade"
+                    style="padding:8px 10px;border:none;border-radius:10px;background:#4cafef;color:#fff;cursor:pointer">
+              交換
+            </button>
+          </div>
+          <div style="font-size:12px;color:#333">
+            レア貝 保有：<span id="rareCount">0</span> 個（2個で交換。いつでも再命名可）
+          </div>
+          <div style="font-size:13px;color:#333;margin-top:4px">
+            現在の名前：<span id="displayName">―</span>
+          </div>
+        </fieldset>
+      </div>
+
       <div id="chatLog"></div>
       <div id="chatCtrl">
         <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
@@ -196,178 +227,12 @@
     </div>
   </div>
 
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
-  <title>WHOAI Gem</title>
-  <style>
-    html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
-      font-family:system-ui,"Noto Sans JP",sans-serif;touch-action:none;overscroll-behavior:none}
-    .bg{position:fixed;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .7s}
-    .bg.show{opacity:1}
-
-    /* Topbar */
-    #topbar{position:fixed;left:0;right:0;top:0;z-index:40;display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0))}
-    #topbar .left,#topbar .right{display:flex;gap:8px}
-    #topbar button{padding:6px 10px;border:none;border-radius:10px;background:rgba(255,255,255,.92);color:#111;cursor:pointer}
-
-    /* Hero */
-    #hero{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;background:rgba(0,0,0,.15)}
-    #hero h1{font-size:clamp(20px,4vw,36px);margin:0 16px;text-shadow:0 2px 8px rgba(0,0,0,.45)}
-    .heroBtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-    .heroBtns button{padding:12px 18px;border:none;border-radius:12px;cursor:pointer;font-weight:700}
-
-    /* キャラ */
-    #whoaiWrap{position:fixed;left:10vw;bottom:12vh;z-index:5;touch-action:none;display:none;transition:left 4s ease, bottom 4s ease}
-    #whoai{width:clamp(80px,12vw,140px);user-select:none;display:block}
-    #accLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-    .bubble{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);background:rgba(255,255,255,.78);backdrop-filter:blur(2px);color:#111;border-radius:10px;padding:4px 8px;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.25);opacity:0;transition:.18s;white-space:nowrap}
-    .bubble.show{opacity:1;transform:translate(-50%,-12px)}
-
-    /* アクセサリー（位置/サイズ） */
-    .acc{position:absolute;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:2}
-    .acc.knit_hat{top:12%;width:58%}
-    .acc.straw_hat{top:9%;width:60%}
-    .acc.sunglasses{top:42%;width:56%}
-    .acc.ribbon_yellow{top:18%;left:60%;width:42%}
-    .acc.star_yellow{top:23%;left:65%;width:40%}
-
-    /* バケツ */
-    #bucket{position:fixed;right:2vw;bottom:7vh;z-index:4;width:clamp(74px,14vw,160px);display:none}
-    #bucket.show{display:block}
-    #bucket img{width:100%;display:block}
-    #counter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,.9);color:#111;border-radius:999px;padding:4px 8px;font-weight:600}
-
-    /* 砂 */
-    #sand{position:fixed;inset:0;z-index:2;touch-action:none;display:none}
-    #sand.show{display:block}
-
-    /* 貝 */
-    .shell{position:fixed;z-index:3;width:clamp(48px,6vw,72px);height:clamp(48px,6vw,72px);transform:translate(-50%,-50%);background-size:contain;background-repeat:no-repeat;background-position:center;cursor:grab;opacity:0;transition:opacity .18s, transform .18s}
-    .shell.show{opacity:1}
-    .shell.drag{transform:translate(-50%,-50%) scale(1.04)}
-
-    /* トースト/フッターUI */
-    #toast{position:fixed;right:10px;top:42px;z-index:20;background:rgba(255,255,255,.92);color:#111;padding:8px 12px;border-radius:10px;font-size:14px;min-width:180px}
-    .ui{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:none;gap:8px;z-index:10;flex-wrap:wrap;justify-content:center}
-    .ui.show{display:flex}
-    .ui button{padding:8px 14px;border:none;border-radius:10px;cursor:pointer}
-
-    /* パネル共通 */
-    .panel{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center}
-    .panel.show{display:flex}
-    .card{background:#fff;color:#111;border-radius:14px;padding:16px;width:min(92svw,720px)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}
-    .choice{border:1px solid #eee;border-radius:12px;padding:8px;text-align:center;cursor:pointer;transition:transform .12s}
-    .choice:hover{transform:translateY(-2px)}
-    .choice img{width:80px;height:auto;display:block;margin:0 auto 6px}
-
-    /* 夜の会話（背景半透明） */
-    #nightPanel .card{width:min(96svw,640px);max-height:90vh;display:flex;flex-direction:column;background:rgba(255,255,255,.75);backdrop-filter:blur(4px)}
-    #chatLog{flex:1;background:rgba(242,242,242,.4);padding:10px;border-radius:10px;overflow:auto}
-    .msg{margin:6px 0;padding:8px 12px;border-radius:16px;max-width:70%}
-    .msg.me{background:rgba(174,225,255,.85);color:#002;margin-left:auto}
-    .msg.ai{background:rgba(255,255,255,.85);color:#000;margin-right:auto}
-    #chatCtrl{display:flex;gap:6px;margin-top:8px}
-    #chatInput{flex:1;padding:10px;border-radius:12px;border:1px solid #ccc}
-    #chatSend{padding:10px 14px;border:none;border-radius:12px;background:#4cafef;color:#fff;cursor:pointer}
-  </style>
-</head>
-<body>
-  <!-- 背景 -->
-  <div id="bg-sunrise" class="bg show" style="background-image:url('./public/bg/sunrise.jpg')"></div>
-  <div id="bg-beach"   class="bg"        style="background-image:url('./public/bg/beach_day.jpg')"></div>
-  <div id="bg-night"   class="bg"        style="background-image:url('./public/bg/night_beach.jpg')"></div>
-
-  <!-- Topbar -->
-  <div id="topbar">
-    <div class="left"><button id="btnAbout">研究について</button></div>
-    <div class="right"><button id="btnLang">EN</button></div>
-  </div>
-
-  <!-- Hero -->
-  <div id="hero">
-    <h1 id="heroTitle">朝日の海へようこそ</h1>
-    <div class="heroBtns">
-      <button id="btnHeroStart">スタート</button>
-      <button id="btnHeroContinue">続きから</button>
-    </div>
-  </div>
-
-  <!-- キャラ -->
-  <div id="whoaiWrap" aria-live="polite">
-    <img id="whoai" src="" alt="whoai">
-    <div id="accLayer" aria-hidden="true"></div>
-    <div id="bubble" class="bubble"></div>
-  </div>
-
-  <!-- バケツ -->
-  <div id="bucket" aria-live="polite">
-    <img id="bucketImg" src="./public/bucket.png" alt="bucket">
-    <div id="counter">0</div>
-  </div>
-
-  <!-- 砂 -->
-  <canvas id="sand"></canvas>
-
-  <!-- トースト / フッターUI -->
-  <div id="toast">朝日がきれいだね</div>
-  <div class="ui" id="gameUi">
-    <button id="btnNight">夜へ</button>
-    <button id="btnAccessory">アクセサリー</button>
-    <button id="btnCollection">コレクション</button>
-    <button id="btnReset">リセット</button>
-  </div>
-
-  <!-- パネル：キャラ選択 -->
-  <div id="charPanel" class="panel" aria-hidden="true">
-    <div class="card">
-      <h2 id="charTitle">キャラを選んでね</h2>
-      <div id="charGrid" class="grid"></div>
-      <div style="text-align:right;margin-top:8px"><button id="charClose">閉じる</button></div>
-    </div>
-  </div>
-
-  <!-- パネル：夜の会話 -->
-  <div id="nightPanel" class="panel" aria-hidden="true">
-    <div class="card">
-      <h2 id="nightTitle">また明日</h2>
-      <div id="chatLog"></div>
-      <div id="chatCtrl">
-        <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
-        <button id="chatSend">送信</button>
-      </div>
-      <div style="text-align:right;margin-top:8px"><button id="nightClose">閉じる</button></div>
-    </div>
-  </div>
-
-  <!-- パネル：アクセサリー -->
-  <div id="accessoryPanel" class="panel" aria-hidden="true">
-    <div class="card">
-      <h2 id="accTitle">アクセサリー</h2>
-      <div id="accList" class="grid"></div>
-      <div style="text-align:right;margin-top:8px"><button id="accClose">閉じる</button></div>
-    </div>
-  </div>
-
-  <!-- パネル：コレクション -->
-  <div id="collectionPanel" class="panel" aria-hidden="true">
-    <div class="card">
-      <h2 id="colTitle">コレクション</h2>
-      <div id="collectionSummary" style="margin:6px 0 12px;color:#333"></div>
-      <h3 id="colCommonTitle">よくある貝</h3>
-      <div id="colCommon" class="grid" style="margin-bottom:12px"></div>
-      <h3 id="colRareTitle">レア</h3>
-      <div id="colRare" class="grid"></div>
-      <div style="text-align:right;margin-top:8px"><button id="colClose">閉じる</button></div>
-    </div>
-  </div>
-
-  <!-- 会話APIラッパ（※閉じタグ必須） -->
+  <!-- 会話APIラッパ（1回だけ・必ず閉じタグあり） -->
   <script src="web/talk.js"></script>
 
-  <!-- ここからゲームのJSは1つの<script>にまとめる -->
+  <!-- ここからゲームロジック -->
   <script>
-  /* ========== 多言語対応 ========== */
+  /* ========== 多言語 ========== */
   const I18N = {
     ja:{about:'研究について',langBtn:'EN',heroTitle:'朝日の海へようこそ',start:'スタート',cont:'続きから',
         chooseChar:'キャラを選んでね',toastSunrise:'朝日がきれいだね',toNight:'夜へ',accessory:'アクセサリー',
@@ -394,7 +259,6 @@
         colTitle:'컬렉션',colCommon:'일반 조개',colRare:'레어',
         beachGuide:'조개는 모래 속에 숨어있어요. 쓸어보세요.',nightGuide:'밤바다입니다. 이야기해볼까요?'}
   };
-
   const $=(s,p=document)=>p.querySelector(s);
   const $$=(s,p=document)=>Array.from(p.querySelectorAll(s));
   const toast=$('#toast'); const say=s=>toast.textContent=s;
@@ -423,20 +287,29 @@
     $('#colCommonTitle').textContent=L.colCommon;
     $('#colRareTitle').textContent=L.colRare;
     const idx=LANG_ORDER.indexOf(lang), next=LANG_ORDER[(idx+1)%LANG_ORDER.length];
-    $('#btnLang').textContent=LANG_LABEL[next]; $('#btnLang').title=`言語を${LANG_LABEL[next]}に切り替え`;
+    $('#btnLang').textContent=LANG_LABEL[next];
+    $('#btnLang').title=`言語を${LANG_LABEL[next]}に切り替え`;
     say(L.toastSunrise);
   }
   function toggleLang(){ const cur=getLang(); const i=LANG_ORDER.indexOf(cur); setLang(LANG_ORDER[(i+1)%LANG_ORDER.length]); }
 
-  /* ==== ストレージ ==== */
-  const store={ get:(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}, set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}} };
+  /* ========== ストレージ ========== */
+  const store={
+    get:(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}},
+    set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+  };
 
-  /* ==== シーン ==== */
+  /* ========== シーン ========== */
   const bg={sunrise:$('#bg-sunrise'),beach:$('#bg-beach'),night:$('#bg-night')};
   let currentScene='sunrise';
-  function scene(name){ Object.values(bg).forEach(e=>e.classList.remove('show')); (bg[name]||bg.sunrise).classList.add('show'); currentScene=name; store.set('whoai.lastScene',name); }
+  function scene(name){
+    Object.values(bg).forEach(e=>e.classList.remove('show'));
+    (bg[name]||bg.sunrise).classList.add('show');
+    currentScene=name;
+    store.set('whoai.lastScene',name);
+  }
 
-  /* ==== キャラ選択 ==== */
+  /* ========== キャラ選択 ========== */
   const whoaiWrap=$('#whoaiWrap'), whoai=$('#whoai'); const accLayer=$('#accLayer'); const bubble=$('#bubble');
   const charPanel=$('#charPanel'), charGrid=$('#charGrid'); $('#charClose').onclick=()=>closePanel(charPanel);
   const CHAR_LIST=['blue_closed.png','green_open.png','orange_closed.png','pink_closed.png','purple_closed.png','tane_green.png','tane_pink.png','tane_purple.png','tane_blue.png'].map(n=>`./public/assets/stage1/${n}`);
@@ -453,80 +326,144 @@
     openPanel(charPanel);
   }
   function startGameWithChar(src){
-    whoai.src=src; whoaiWrap.style.display='block'; store.set('whoai.char',src); closePanel(charPanel);
-    $('#hero').style.display='none'; $('#gameUi').classList.add('show'); scene('beach'); restoreAccessories();
+    whoai.src=src; whoaiWrap.style.display='block'; store.set('whoai.char',src);
+    closePanel(charPanel); $('#hero').style.display='none'; $('#gameUi').classList.add('show');
+    scene('beach'); restoreAccessories();
   }
 
-  /* ==== Heroボタン ==== */
+  /* ========== Heroボタン ========== */
   $('#btnHeroStart').onclick=()=>openCharPanel();
   $('#btnHeroContinue').onclick=()=>continueGame();
   $('#btnAbout').onclick=()=>location.href='about/';
   $('#btnLang').onclick=()=>toggleLang();
+
   function continueGame(){
     const saved=store.get('whoai.char',null); const last=store.get('whoai.lastScene','beach');
     if(!saved){ openCharPanel(); return; }
-    whoai.src=saved; whoaiWrap.style.display='block'; $('#hero').style.display='none'; $('#gameUi').classList.add('show'); scene(last); restoreAccessories();
+    whoai.src=saved; whoaiWrap.style.display='block';
+    $('#hero').style.display='none'; $('#gameUi').classList.add('show');
+    scene(last); restoreAccessories();
   }
 
-  /* ==== パネル ==== */
+  /* ========== パネル操作 ========== */
   function openPanel(p){ p.classList.add('show'); p.setAttribute('aria-hidden','false'); }
   function closePanel(p){ p.classList.remove('show'); p.setAttribute('aria-hidden','true'); }
 
-  /* ==== 初期化 ==== */
+  /* ========== 初期化 ========== */
   function init(){
-    setLang(getLang()); scene('sunrise'); whoaiWrap.style.display='none'; $('#gameUi').classList.remove('show');
-    const hasSave=!!store.get('whoai.char',null); const btn=$('#btnHeroContinue'); btn.disabled=!hasSave; btn.style.opacity=hasSave?'1':'.5';
+    setLang(getLang());
+    scene('sunrise');
+    whoaiWrap.style.display='none';
+    $('#gameUi').classList.remove('show');
+    const hasSave=!!store.get('whoai.char',null);
+    const btnCont=$('#btnHeroContinue'); btnCont.disabled=!hasSave; btnCont.style.opacity=hasSave?'1':'.5';
+    // 既存の名前表示
+    $('#displayName').textContent = store.get('whoai.name','―');
   }
   init();
 
-  /* ==== 砂キャンバス ==== */
+  /* ========== 砂キャンバス ========== */
   const sand=document.getElementById('sand'); const ctx=sand.getContext('2d',{willReadFrequently:true});
-  function resizeSand(){ sand.width=innerWidth; sand.height=innerHeight; const g=ctx.createLinearGradient(0,0,0,sand.height); g.addColorStop(0,'#e7d9b7'); g.addColorStop(1,'#c8b68f'); ctx.fillStyle=g; ctx.fillRect(0,0,sand.width,sand.height); ctx.globalAlpha=.12; for(let i=0;i<800;i++){const x=Math.random()*sand.width,y=Math.random()*sand.height; ctx.fillStyle=(i%3===0)?'#bfae82':'#d2c29a'; ctx.beginPath(); ctx.arc(x,y,Math.random()*1.2+.2,0,Math.PI*2); ctx.fill();} ctx.globalAlpha=1; }
-  const BRUSH=30; function brushAt(x,y){ ctx.globalCompositeOperation='destination-out'; ctx.globalAlpha=.35; ctx.beginPath(); ctx.arc(x,y,BRUSH,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; maybeSpawnNear(x,y); }
+  function resizeSand(){
+    sand.width=innerWidth; sand.height=innerHeight;
+    const g=ctx.createLinearGradient(0,0,0,sand.height); g.addColorStop(0,'#e7d9b7'); g.addColorStop(1,'#c8b68f');
+    ctx.fillStyle=g; ctx.fillRect(0,0,sand.width,sand.height);
+    ctx.globalAlpha=.12; for(let i=0;i<800;i++){const x=Math.random()*sand.width,y=Math.random()*sand.height;
+      ctx.fillStyle=(i%3===0)?'#bfae82':'#d2c29a'; ctx.beginPath(); ctx.arc(x,y,Math.random()*1.2+.2,0,Math.PI*2); ctx.fill();}
+    ctx.globalAlpha=1;
+  }
+  const BRUSH=30;
+  function brushAt(x,y){
+    ctx.globalCompositeOperation='destination-out'; ctx.globalAlpha=.35;
+    ctx.beginPath(); ctx.arc(x,y,BRUSH,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
+    maybeSpawnNear(x,y);
+  }
   sand.addEventListener('pointerdown',e=>{ if(currentScene==='beach') brushAt(e.clientX,e.clientY); },{passive:false});
   sand.addEventListener('pointermove',e=>{ if(currentScene==='beach'&&e.buttons) brushAt(e.clientX,e.clientY); },{passive:false});
 
-  /* ==== 貝 ==== */
+  /* ========== 貝 ========== */
   const COMMON=['./public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'];
   const RARE=['./public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'];
   const bucket=document.getElementById('bucket'); const counter=document.getElementById('counter');
-  let count=0, spawnedTotal=0; const shells=[]; const MAX_SHELLS=8, TOTAL_SPAWN_LIMIT=20, MIN_DIST=90, SPAWN_P=.18;
+
+  let count=0, spawnedTotal=0; const shells=[];
+  const MAX_SHELLS=8, TOTAL_SPAWN_LIMIT=20, MIN_DIST=90, SPAWN_P=.18;
+
   function tooClose(x,y){return shells.some(s=>Math.hypot(s.x-x,s.y-y)<MIN_DIST);}
   function avoidBucket(x,y){ const b=bucket.getBoundingClientRect(); const cx=(b.left+b.right)/2,cy=(b.top+b.bottom)/2; return Math.hypot(cx-x,cy-y)<120; }
+
   function maybeSpawnNear(x,y){
     if(shells.length>=MAX_SHELLS||spawnedTotal>=TOTAL_SPAWN_LIMIT||Math.random()>SPAWN_P) return;
     let px=x+(Math.random()*2-1)*90, py=y+(Math.random()*2-1)*90;
     px=Math.max(60,Math.min(innerWidth-60,px)); py=Math.max(100,Math.min(innerHeight-100,py));
     if(tooClose(px,py)||avoidBucket(px,py)) return;
-    const rare=Math.random()<.18; const src=(rare?RARE:COMMON)[Math.floor(Math.random()*(rare?RARE.length:COMMON.length))];
+    const rare=Math.random()<.18; const pool=rare?RARE:COMMON;
+    const src=pool[Math.floor(Math.random()*pool.length)];
     const el=document.createElement('div'); el.className='shell'; el.style.left=px+'px'; el.style.top=py+'px'; el.style.backgroundImage=`url(${src})`;
-    document.body.appendChild(el); requestAnimationFrame(()=>el.classList.add('show')); enableShellDrag(el,src); shells.push({el,x:px,y:py,src}); spawnedTotal++; store.set('whoai.spawned',spawnedTotal);
+    document.body.appendChild(el); requestAnimationFrame(()=>el.classList.add('show'));
+    enableShellDrag(el,src); shells.push({el,x:px,y:py,src}); spawnedTotal++; store.set('whoai.spawned',spawnedTotal);
   }
+
   function enableShellDrag(el,src){
     let pid=null,dx=0,dy=0;
     el.addEventListener('pointerdown',e=>{e.preventDefault(); pid=e.pointerId; el.setPointerCapture(pid); dx=e.clientX-parseFloat(el.style.left); dy=e.clientY-parseFloat(el.style.top); el.classList.add('drag');},{passive:false});
     el.addEventListener('pointermove',e=>{ if(e.pointerId!==pid)return; e.preventDefault(); el.style.left=(e.clientX-dx)+'px'; el.style.top=(e.clientY-dy)+'px';},{passive:false});
-    function finish(e){ if(e.pointerId!==pid)return; e.preventDefault(); el.classList.remove('drag'); el.releasePointerCapture(pid); pid=null;
+    function finish(e){
+      if(e.pointerId!==pid)return; e.preventDefault(); el.classList.remove('drag'); el.releasePointerCapture(pid); pid=null;
       const b=bucket.getBoundingClientRect(), s=el.getBoundingClientRect();
       const hit=!(s.right<b.left||s.left>b.right||s.bottom<b.top||s.top>b.bottom);
-      if(hit){ el.remove(); const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1); counter.textContent=++count; persistCount(); const key=src.split('/').pop().replace('.png',''); updateCollection(key,1); showBubble(Math.random()<.2?'レアだよ！':'やったね！'); refreshCollectionView(); refreshAccessoryLocks(); }
+      if(hit){
+        el.remove(); const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1);
+        counter.textContent=++count; persistCount();
+        const key=src.split('/').pop().replace('.png','');
+        updateCollection(key,1);
+        showBubble(Math.random()<.2?'レアだよ！':'やったね！');
+        refreshCollectionView(); refreshAccessoryLocks(); updateRareCountUI();
+      }
     }
-    el.addEventListener('pointerup',finish,{passive:false}); el.addEventListener('pointercancel',finish,{passive:false});
+    el.addEventListener('pointerup',finish,{passive:false});
+    el.addEventListener('pointercancel',finish,{passive:false});
   }
 
-  /* ==== コレクション ==== */
+  /* ========== コレクション ========== */
   const collectionPanel=$('#collectionPanel'), colCommon=$('#colCommon'), colRare=$('#colRare'), collectionSummary=$('#collectionSummary'); $('#colClose').onclick=()=>closePanel(collectionPanel);
   const ALL_ITEMS=[...COMMON,...RARE].map(src=>({key:src.split('/').pop().replace('.png',''),src}));
   function getCollection(){return store.get('whoai.collection',{});} function setCollection(o){store.set('whoai.collection',o);}
   function updateCollection(key,d){const c=getCollection(); c[key]=(c[key]||0)+(d||0); if(c[key]<0)c[key]=0; setCollection(c);}
   function totalCollected(){return Object.values(getCollection()).reduce((a,b)=>a+b,0);}
-  function buildCollectionGrid(){ const make=(src)=>{const key=src.split('/').pop().replace('.png',''); const slot=document.createElement('div'); slot.className='slot'; slot.innerHTML=`<div class="thumb" style="background-image:url(${src});width:80px;height:80px;background-size:contain;background-repeat:no-repeat;background-position:center;margin:auto"></div><div class="name" style="text-align:center">${key}</div><div class="count" style="text-align:center">×<span data-key="${key}">0</span></div>`; return slot; }; colCommon.innerHTML=''; COMMON.forEach(s=>colCommon.appendChild(make(s))); colRare.innerHTML=''; RARE.forEach(s=>colRare.appendChild(make(s))); colCommon.dataset.ready='1'; colRare.dataset.ready='1'; }
-  function refreshCollectionView(){ const col=getCollection(); const totalKinds=ALL_ITEMS.length; const ownedKinds=ALL_ITEMS.filter(x=>(col[x.key]||0)>0).length; const total=totalCollected(); collectionSummary.textContent=`入手種: ${ownedKinds}/${totalKinds}　総数: ${total}　コンプ率: ${Math.round(ownedKinds/totalKinds*100)}%`; $$('#collectionPanel .count span').forEach(span=>{const key=span.getAttribute('data-key'); span.textContent=col[key]||0;}); }
+  function rareCount(){ const c=getCollection(); return RARE.reduce((sum,src)=>sum+(c[src.split('/').pop().replace('.png','')]||0),0); }
+
+  function buildCollectionGrid(){
+    const make=(src)=>{const key=src.split('/').pop().replace('.png',''); const slot=document.createElement('div'); slot.className='slot';
+      slot.innerHTML=`<div class="thumb" style="background-image:url(${src});width:80px;height:80px;background-size:contain;background-repeat:no-repeat;background-position:center;margin:auto"></div>
+                      <div class="name" style="text-align:center">${key}</div>
+                      <div class="count" style="text-align:center">×<span data-key="${key}">0</span></div>`;
+      return slot;
+    };
+    colCommon.innerHTML=''; COMMON.forEach(s=>colCommon.appendChild(make(s)));
+    colRare.innerHTML='';   RARE.forEach(s=>colRare.appendChild(make(s)));
+    colCommon.dataset.ready='1'; colRare.dataset.ready='1';
+  }
+  function refreshCollectionView(){
+    const col=getCollection();
+    const totalKinds=ALL_ITEMS.length;
+    const ownedKinds=ALL_ITEMS.filter(x=>(col[x.key]||0)>0).length;
+    const total=totalCollected();
+    collectionSummary.textContent=`入手種: ${ownedKinds}/${totalKinds}　総数: ${total}　コンプ率: ${Math.round(ownedKinds/totalKinds*100)}%`;
+    $$('#collectionPanel .count span').forEach(span=>{const key=span.getAttribute('data-key'); span.textContent=col[key]||0;});
+  }
   function openCollection(){ if(!colCommon.dataset.ready) buildCollectionGrid(); refreshCollectionView(); openPanel(collectionPanel); }
 
-  /* ==== アクセサリー ==== */
+  /* ========== アクセサリー ========== */
   const accessoryPanel=$('#accessoryPanel'), accList=$('#accList'); $('#accClose').onclick=()=>closePanel(accessoryPanel);
-  const ACCESSORIES=[ {key:'straw_hat',name:'麦わら帽子',src:'./public/accessories/straw_hat.png',cls:'straw_hat',unlockAt:3}, {key:'knit_hat',name:'毛糸の帽子',src:'./public/accessories/knit_hat.png',cls:'knit_hat',unlockAt:6}, {key:'sunglasses',name:'サングラス',src:'./public/accessories/sunglasses.png',cls:'sunglasses',unlockAt:10}, {key:'ribbon_yellow',name:'黄色いリボン',src:'./public/accessories/ribbon_yellow.png',cls:'ribbon_yellow',unlockAt:15}, {key:'star_yellow',name:'黄色のスター',src:'./public/accessories/star_yellow.png',cls:'star_yellow',unlockAt:20} ];
+  const ACCESSORIES=[ 
+    {key:'straw_hat',name:'麦わら帽子',src:'./public/accessories/straw_hat.png',cls:'straw_hat',unlockAt:3},
+    {key:'knit_hat',name:'毛糸の帽子',src:'./public/accessories/knit_hat.png',cls:'knit_hat',unlockAt:6},
+    {key:'sunglasses',name:'サングラス',src:'./public/accessories/sunglasses.png',cls:'sunglasses',unlockAt:10},
+    {key:'ribbon_yellow',name:'黄色いリボン',src:'./public/accessories/ribbon_yellow.png',cls:'ribbon_yellow',unlockAt:15},
+    {key:'star_yellow',name:'黄色のスター',src:'./public/accessories/star_yellow.png',cls:'star_yellow',unlockAt:20}
+  ];
   function getActiveAcc(){return new Set(store.get('whoai.accessories',[]));}
   function setActiveAcc(s){store.set('whoai.accessories',Array.from(s));}
   function addAccImg(a){ removeAccImg(a.key); const img=document.createElement('img'); img.src=a.src; img.alt=a.name; img.className='acc '+(a.cls||''); img.dataset.key=a.key; accLayer.appendChild(img); }
@@ -537,7 +474,12 @@
     if(!accList.dataset.ready){
       ACCESSORIES.forEach(a=>{
         const div=document.createElement('div'); div.className='accChoice'; div.dataset.key=a.key;
-        div.innerHTML=`<img src="${a.src}" alt="${a.name}" style="width:80px;height:auto;display:block;margin:0 auto 6px"><div class="t" style="text-align:center"><div style="font-weight:700">${a.name}</div><div class="hint" style="font-size:12px;color:#666">タップで装着/解除</div></div><input type="checkbox" style="display:block;margin:8px auto 0">`;
+        div.innerHTML=`<img src="${a.src}" alt="${a.name}" style="width:80px;height:auto;display:block;margin:0 auto 6px">
+                       <div class="t" style="text-align:center">
+                         <div style="font-weight:700">${a.name}</div>
+                         <div class="hint" style="font-size:12px;color:#666">タップで装着/解除</div>
+                       </div>
+                       <input type="checkbox" style="display:block;margin:8px auto 0">`;
         const cb=div.querySelector('input'); cb.addEventListener('change',()=>toggleAccessory(a,cb.checked));
         div.addEventListener('click',e=>{ if(e.target.tagName!=='INPUT'){ cb.checked=!cb.checked; cb.dispatchEvent(new Event('change')); }});
         accList.appendChild(div);
@@ -560,29 +502,94 @@
     $$('.accChoice',accList).forEach(div=>{ const a=ACCESSORIES.find(x=>x.key===div.dataset.key); const cb=div.querySelector('input'); const hint=div.querySelector('.hint'); const locked=total<a.unlockAt; div.style.opacity=locked?.5:1; cb.disabled=locked; hint.textContent=locked?`あと ${a.unlockAt-total} 個で解放`:'タップで装着/解除'; });
   }
 
-  /* ==== 夜会話 ==== */
-  const nightPanel=$('#nightPanel'), chatLog=$('#chatLog'), chatInput=$('#chatInput'), chatSend=$('#chatSend'); $('#nightClose').onclick=()=>closePanel(nightPanel);
-  function addMsg(role,text){ const d=document.createElement('div'); d.className='msg '+(role==='user'?'me':'ai'); d.textContent=text; chatLog.appendChild(d); chatLog.scrollTop=chatLog.scrollHeight; }
-  function openNight(){ openPanel(nightPanel); if(!chatLog.dataset.greet){ addMsg('ai',I18N[getLang()].nightGuide); chatLog.dataset.greet='1'; } }
-  chatSend.onclick=async()=>{ const text=chatInput.value.trim(); if(!text) return; addMsg('user',text); chatInput.value=''; try{ if(window.WHOAI_TALK&&WHOAI_TALK.talk){ const {reply}=await WHOAI_TALK.talk(text,{state:{totalCollected:count}}); addMsg('ai',reply||'…'); } else { addMsg('ai',`（ローカル）${text}。夜風が気持ちいいね。`);} }catch{ addMsg('ai','（接続できませんでした）'); } };
+  /* ========== 名前交換（レア貝2個→名前） ========== */
+  const btnNameTrade = $('#btnNameTrade'); const nameInput = $('#nameInput'); const displayName = $('#displayName'); const rareCountSpan = $('#rareCount');
+  function updateRareCountUI(){ rareCountSpan.textContent = rareCount(); }
+  btnNameTrade.addEventListener('click', ()=>{
+    const want = (nameInput.value||'').trim(); if(!want) { showBubble('なまえを入力してね'); return; }
+    if(rareCount() < 2){ showBubble('レア貝が足りないよ（2個必要）'); return; }
+    // 消費
+    const c = store.get('whoai.collection',{});
+    let need = 2;
+    for(const src of RARE){
+      const key = src.split('/').pop().replace('.png','');
+      const have = c[key]||0; if(have<=0) continue;
+      const use = Math.min(have, need); c[key] = have - use; need -= use;
+      if(need===0) break;
+    }
+    store.set('whoai.collection', c);
+    store.set('whoai.name', want);
+    displayName.textContent = want;
+    refreshCollectionView(); updateRareCountUI();
+    showBubble('名前を設定したよ');
+  });
 
-  /* ==== フッターUI ==== */
+  /* ========== 夜会話 ========== */
+  const nightPanelEl=$('#nightPanel'), chatLog=$('#chatLog'), chatInput=$('#chatInput'), chatSend=$('#chatSend'); $('#nightClose').onclick=()=>closePanel(nightPanelEl);
+  function addMsg(role,text){ const d=document.createElement('div'); d.className='msg '+(role==='user'?'me':'ai'); d.textContent=text; chatLog.appendChild(d); chatLog.scrollTop=chatLog.scrollHeight; }
+  function openNight(){
+    openPanel(nightPanelEl);
+    if(!chatLog.dataset.greet){ addMsg('ai',I18N[getLang()].nightGuide); chatLog.dataset.greet='1'; }
+  }
+  chatSend.onclick=async()=>{
+    const text=chatInput.value.trim(); if(!text) return;
+    addMsg('user',text); chatInput.value='';
+    // 会話キャラ設定（radio）
+    const persona = (document.querySelector('input[name="persona"]:checked')?.value)||'';
+    try{
+      if(window.WHOAI_TALK&&WHOAI_TALK.talk){
+        const {reply}=await WHOAI_TALK.talk(text,{
+          personality: persona==='random' ? ['元気','静寂','情熱','創造'][Math.floor(Math.random()*4)] : persona,
+          state:{ totalCollected:count }
+        });
+        addMsg('ai',reply||'…');
+      }else{
+        addMsg('ai',`（ローカル）${text}。夜風が気持ちいいね。`);
+      }
+    }catch{ addMsg('ai','（接続できませんでした）'); }
+  };
+
+  /* ========== フッターUI ========== */
   $('#btnNight').onclick=()=>{ scene('night'); openNight(); };
   $('#btnAccessory').onclick=()=>{ if(getComputedStyle(whoaiWrap).display!=='none') openAccessory(); };
-  $('#btnCollection').onclick=()=>openCollection();
-  $('#btnReset').onclick=()=>{ count=0; counter.textContent=0; store.set('whoai.count',0); $$('.shell').forEach(e=>e.remove()); spawnedTotal=0; store.set('whoai.spawned',0); if(currentScene==='beach') resizeSand(); say('リセットしたよ'); };
+  $('#btnCollection').onclick=()=> openCollection();
+  $('#btnReset').onclick=()=>{
+    count=0; counter.textContent=0; store.set('whoai.count',0);
+    $$('.shell').forEach(e=>e.remove());
+    spawnedTotal=0; store.set('whoai.spawned',0);
+    if(currentScene==='beach') resizeSand();
+    say('リセットしたよ');
+  };
 
-  /* ==== 保存/復元 ==== */
+  /* ========== 保存/復元 ========== */
   function persistCount(){ store.set('whoai.count',count); }
-  (function loadSaved(){ count=store.get('whoai.count',0)||0; counter.textContent=count; spawnedTotal=store.get('whoai.spawned',0)||0; })();
+  (function loadSaved(){
+    count=store.get('whoai.count',0)||0; counter.textContent=count;
+    spawnedTotal=store.get('whoai.spawned',0)||0;
+    displayName.textContent = store.get('whoai.name','―');
+    updateRareCountUI();
+  })();
 
-  /* ==== シーンフック：ビーチUIの表示切替 ==== */
-  (function hookScene(){ const _scene=scene; scene=function(name){ _scene(name); if(name==='beach'){ sand.classList.add('show'); bucket.classList.add('show'); resizeSand(); say(I18N[getLang()].beachGuide); } else { sand.classList.remove('show'); bucket.classList.remove('show'); if(name==='night') say(I18N[getLang()].nightGuide); } }; })();
+  /* ========== ビーチ入退でUI ========== */
+  (function hookScene(){
+    const _scene=scene;
+    scene=function(name){
+      _scene(name);
+      if(name==='beach'){
+        sand.classList.add('show'); bucket.classList.add('show'); resizeSand();
+        say(I18N[getLang()].beachGuide);
+      }else{
+        sand.classList.remove('show'); bucket.classList.remove('show');
+        if(name==='night') say(I18N[getLang()].nightGuide);
+      }
+    };
+  })();
 
-  /* ==== 徘徊・吹き出し・リサイズ ==== */
+  /* ========== 徘徊・吹き出し・リサイズ ========== */
   setInterval(()=>{ whoaiWrap.style.left=(8+Math.random()*72)+'vw'; whoaiWrap.style.bottom=(10+Math.random()*60)+'vh'; },5000);
   function showBubble(text){ bubble.textContent=text; bubble.classList.add('show'); setTimeout(()=>bubble.classList.remove('show'),1200); }
   addEventListener('resize',()=>{ if(currentScene==='beach') resizeSand(); });
+
   </script>
 </body>
 </html>
