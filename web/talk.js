@@ -1,12 +1,7 @@
-// /web/talk.js  ← タグなしの“純JS”。HTMLから <script src="./web/talk.js"> で読み込み
+<!-- /web/talk.js の中身（そのまま） -->
+<script>
 (function(){
-  // 同一ドメインでAPIが動くならこれでOK。
-  // 静的サイトから別ドメインAPIを呼ぶときは 'https://your-app.vercel.app' のように書く。
-  const PROD_API_BASE = '';
-  const API_BASE = (location.hostname === 'localhost')
-    ? 'http://localhost:3000'   // vercel dev を使う場合
-    : (PROD_API_BASE || '');
-  const ENDPOINT = API_BASE + '/api/talk';
+  const ENDPOINT = '/api/talk';  // Vercel のサーバー関数
 
   async function talk(text, opts = {}) {
     const payload = {
@@ -21,17 +16,20 @@
     try{
       const res = await fetch(ENDPOINT, {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
       });
       if(!res.ok) throw new Error('bad status '+res.status);
       const data = await res.json();
       return { reply: data?.reply || '' };
     }catch(e){
+      // 接続失敗時のフォールバック（デモ用）
       const s = payload.state || {};
       return { reply: `（モック）${text}。きょう集めた貝は ${s.totalCollected ?? 0} 個だよ。` };
     }
   }
 
+  // グローバル公開
   window.WHOAI_TALK = { talk };
 })();
+</script>
