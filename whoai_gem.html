@@ -159,40 +159,6 @@
   <div id="nightPanel" class="panel" aria-hidden="true">
     <div class="card">
       <h2 id="nightTitle">また明日</h2>
-
-      <!-- 会話前の設定 -->
-      <div id="preChat" style="display:flex;gap:12px;flex-wrap:wrap;margin:6px 0 10px">
-        <!-- 会話キャラ選択 -->
-        <fieldset style="flex:1;min-width:240px;border:1px solid #ddd;border-radius:10px;padding:10px">
-          <legend id="legendPersona" style="font-weight:700;padding:0 6px">会話キャラ</legend>
-          <label><input type="radio" name="persona" value="random" checked> ランダム</label>
-          <label style="margin-left:8px"><input type="radio" name="persona" value="元気"> 元気</label>
-          <label style="margin-left:8px"><input type="radio" name="persona" value="静寂"> 静寂</label>
-          <label style="margin-left:8px"><input type="radio" name="persona" value="情熱"> 情熱</label>
-          <label style="margin-left:8px"><input type="radio" name="persona" value="創造"> 創造</label>
-        </fieldset>
-
-        <!-- レア貝2個 ↔ 名前 -->
-        <fieldset style="flex:1;min-width:260px;border:1px solid #ddd;border-radius:10px;padding:10px">
-          <legend id="legendNaming" style="font-weight:700;padding:0 6px">名前（レア貝2個と交換）</legend>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-            <input id="nameInput" type="text" maxlength="16" placeholder="なまえを入力"
-              style="flex:1;padding:8px;border-radius:10px;border:1px solid #ccc">
-            <button id="btnNameTrade"
-              style="padding:8px 10px;border:none;border-radius:10px;background:#4cafef;color:#fff;cursor:pointer">
-              交換
-            </button>
-          </div>
-          <div id="rareInfo" style="font-size:12px;color:#333">
-            レア貝 保有：<span id="rareCount">0</span> 個（2個で交換。いつでも再命名可）
-          </div>
-          <div id="currentName" style="font-size:13px;color:#333;margin-top:4px">
-            現在の名前：<span id="displayName">―</span>
-          </div>
-        </fieldset>
-      </div>
-
-      <!-- チャット -->
       <div id="chatLog"></div>
       <div id="chatCtrl">
         <input id="chatInput" type="text" placeholder="夜空を見ながら、何を話そう？">
@@ -232,166 +198,559 @@
 
   <!-- 会話APIラッパ -->
   <script src="./web/talk.js"></script>
-<script>
-  /* ========== ストレージユーティリティ ========== */
-const store = {
-  get:(k,d)=>{ try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;} },
-  set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));}catch{} }
-};
 
-/* ========== シーン管理 ========== */
-const bg = { sunrise:$('#bg-sunrise'), beach:$('#bg-beach'), night:$('#bg-night') };
-let currentScene='sunrise';
-function scene(name){
-  Object.values(bg).forEach(e=>e.classList.remove('show'));
-  (bg[name]||bg.sunrise).classList.add('show');
-  currentScene=name;
-  store.set('whoai.lastScene',name);
-}
+  <script>
+   /* ========== 多言語対応 ========== */
+  const I18N = {
+    ja:{about:'研究について',langBtn:'EN',heroTitle:'朝日の海へようこそ',start:'スタート',cont:'続きから',
+        chooseChar:'キャラを選んでね',toastSunrise:'朝日がきれいだね',toNight:'夜へ',accessory:'アクセサリー',
+        collection:'コレクション',reset:'リセット',nightTitle:'また明日',
+        nightPH:'夜空を見ながら、何を話そう？',send:'送信',close:'閉じる',
+        colTitle:'コレクション',colCommon:'よくある貝',colRare:'レア',
+        beachGuide:'砂の中に貝があるよ。なでて探してね',nightGuide:'夜の海。話そうか？'},
+    en:{about:'About this research',langBtn:'中文',heroTitle:'Welcome to the Sunrise Shore',start:'Start',cont:'Continue',
+        chooseChar:'Choose your character',toastSunrise:'Beautiful sunrise',toNight:'To Night',accessory:'Accessories',
+        collection:'Collection',reset:'Reset',nightTitle:'See you tomorrow',
+        nightPH:'What shall we talk about under the night sky?',send:'Send',close:'Close',
+        colTitle:'Collection',colCommon:'Common Shells',colRare:'Rare',
+        beachGuide:'Shells hide in the sand. Swipe to find them.',nightGuide:"It's night by the sea. Shall we talk?"},
+    zh:{about:'关于研究',langBtn:'한국어',heroTitle:'欢迎来到朝阳海岸',start:'开始',cont:'继续',
+        chooseChar:'选择角色',toastSunrise:'美丽的朝阳',toNight:'进入夜晚',accessory:'饰品',
+        collection:'收藏',reset:'重置',nightTitle:'明天见',
+        nightPH:'在星空下我们聊些什么？',send:'发送',close:'关闭',
+        colTitle:'收藏',colCommon:'常见贝壳',colRare:'稀有',
+        beachGuide:'贝壳藏在沙子里，滑动寻找它们。',nightGuide:'夜晚的海边，我们聊聊吧？'},
+    ko:{about:'연구에 대하여',langBtn:'日本語',heroTitle:'아침 해변에 오신 것을 환영합니다',start:'시작',cont:'계속',
+        chooseChar:'캐릭터를 선택하세요',toastSunrise:'아름다운 아침 해',toNight:'밤으로',accessory:'액세서리',
+        collection:'컬렉션',reset:'리셋',nightTitle:'내일 또 봐요',
+        nightPH:'밤하늘을 보며 무엇을 이야기할까요?',send:'보내기',close:'닫기',
+        colTitle:'컬렉션',colCommon:'일반 조개',colRare:'레어',
+        beachGuide:'조개는 모래 속에 숨어있어요. 쓸어보세요.',nightGuide:'밤바다입니다. 이야기해볼까요?'}
+  };
 
-/* ========== キャラ選択 ========== */
-const whoaiWrap=$('#whoaiWrap'), whoai=$('#whoai');
-const charPanel=$('#charPanel'), charGrid=$('#charGrid');
-$('#charClose').onclick=()=>closePanel(charPanel);
+  const $=(s,p=document)=>p.querySelector(s);
+  const $$=(s,p=document)=>Array.from(p.querySelectorAll(s));
+  const toast=$('#toast');
+  const say=s=>toast.textContent=s;
+  const getLang=()=>localStorage.getItem('whoai.lang')||'ja';
+  const LANG_ORDER=['ja','en','zh','ko'];
+  const LANG_LABEL={ja:'日本語',en:'EN',zh:'中文',ko:'한국어'};
 
-const CHAR_LIST=[
-  'blue_closed.png','green_open.png','orange_closed.png','pink_closed.png','purple_closed.png',
-  'tane_green.png','tane_pink.png','tane_purple.png','tane_blue.png'
-].map(n=>`./public/assets/stage1/${n}`);
+  function setLang(lang){
+    const L=I18N[lang]||I18N.ja;
+    document.documentElement.setAttribute('lang',lang);
+    localStorage.setItem('whoai.lang',lang);
 
-function openCharPanel(){
-  if(!charGrid.dataset.ready){
-    CHAR_LIST.forEach(src=>{
-      const d=document.createElement('div');
-      d.className='choice';
-      d.innerHTML=`<img src="${src}" alt=""><div>${src.split('/').pop().replace('.png','')}</div>`;
-      d.onclick=()=>startGameWithChar(src);
-      charGrid.appendChild(d);
-    });
-    charGrid.dataset.ready='1';
+    $('#btnAbout').textContent=L.about;
+    $('#heroTitle').textContent=L.heroTitle;
+    $('#btnHeroStart').textContent=L.start;
+    $('#btnHeroContinue').textContent=L.cont;
+    $('#btnNight').textContent=L.toNight;
+    $('#btnAccessory').textContent=L.accessory;
+    $('#btnCollection').textContent=L.collection;
+    $('#btnReset').textContent=L.reset;
+    $('#charTitle').textContent=L.chooseChar;
+    $('#nightTitle').textContent=L.nightTitle;
+    $('#chatInput').placeholder=L.nightPH;
+    $('#chatSend').textContent=L.send;
+    $('#accTitle').textContent=L.accessory;
+    $('#colTitle').textContent=L.colTitle;
+    $('#colCommonTitle').textContent=L.colCommon;
+    $('#colRareTitle').textContent=L.colRare;
+
+    // 次に切り替わる言語を表示
+    const idx=LANG_ORDER.indexOf(lang);
+    const next=LANG_ORDER[(idx+1)%LANG_ORDER.length];
+    $('#btnLang').textContent=LANG_LABEL[next];
+    $('#btnLang').title=`言語を${LANG_LABEL[next]}に切り替え`;
+
+    say(L.toastSunrise);
   }
-  openPanel(charPanel);
+  function toggleLang(){
+    const cur=getLang();
+    const idx=LANG_ORDER.indexOf(cur);
+    const next=LANG_ORDER[(idx+1)%LANG_ORDER.length];
+    setLang(next);
+  }
+
+  /* ========== ストレージユーティリティ ========== */
+  const store = {
+    get:(k,d)=>{ try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;} },
+    set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));}catch{} }
+  };
+
+  /* ========== シーン管理 ========== */
+  const bg = { sunrise:$('#bg-sunrise'), beach:$('#bg-beach'), night:$('#bg-night') };
+  let currentScene='sunrise';
+  function scene(name){
+    Object.values(bg).forEach(e=>e.classList.remove('show'));
+    (bg[name]||bg.sunrise).classList.add('show');
+    currentScene=name;
+    store.set('whoai.lastScene',name);
+  }
+
+  /* ========== キャラ選択 ========== */
+  const whoaiWrap=$('#whoaiWrap'), whoai=$('#whoai');
+  const charPanel=$('#charPanel'), charGrid=$('#charGrid');
+  $('#charClose').onclick=()=>closePanel(charPanel);
+
+  const CHAR_LIST=[
+    'blue_closed.png','green_open.png','orange_closed.png','pink_closed.png','purple_closed.png',
+    'tane_green.png','tane_pink.png','tane_purple.png','tane_blue.png'
+  ].map(n=>`./public/assets/stage1/${n}`);
+
+  function openCharPanel(){
+    if(!charGrid.dataset.ready){
+      CHAR_LIST.forEach(src=>{
+        const d=document.createElement('div');
+        d.className='choice';
+        d.innerHTML=`<img src="${src}" alt=""><div>${src.split('/').pop().replace('.png','')}</div>`;
+        d.onclick=()=>startGameWithChar(src);
+        charGrid.appendChild(d);
+      });
+      charGrid.dataset.ready='1';
+    }
+    openPanel(charPanel);
+  }
+
+  function startGameWithChar(src){
+    whoai.src=src;
+    whoaiWrap.style.display='block';
+    store.set('whoai.char',src);
+    closePanel(charPanel);
+    $('#hero').style.display='none';  // Hero隠す
+    $('#gameUi').classList.add('show');
+    scene('beach');                   // ビーチへ
+  }
+
+  /* ========== Heroボタン ========== */
+  $('#btnHeroStart').onclick=()=>openCharPanel();
+  $('#btnHeroContinue').onclick=()=>continueGame();
+  $('#btnAbout').onclick=()=>location.href='about/';
+  $('#btnLang').onclick=()=>toggleLang();
+
+  function continueGame(){
+    const saved=store.get('whoai.char',null);
+    const last=store.get('whoai.lastScene','beach');
+    if(!saved){ openCharPanel(); return; }
+    whoai.src=saved; whoaiWrap.style.display='block';
+    $('#hero').style.display='none';
+    $('#gameUi').classList.add('show');
+    scene(last);
+  }
+
+  /* ========== 共通パネル操作 ========== */
+  function openPanel(p){ p.classList.add('show'); p.setAttribute('aria-hidden','false'); }
+  function closePanel(p){ p.classList.remove('show'); p.setAttribute('aria-hidden','true'); }
+
+  /* ========== 初期化 ========== */
+  function init(){
+    setLang(getLang());
+    scene('sunrise');
+    whoaiWrap.style.display='none';
+    $('#gameUi').classList.remove('show');
+    const hasSave=!!store.get('whoai.char',null);
+    const btnCont=$('#btnHeroContinue');
+    btnCont.disabled=!hasSave;
+    btnCont.style.opacity=hasSave?'1':'.5';
+  }
+  init();
+  <script>
+/* ========== 砂キャンバス & 探索 ========== */
+const sand = document.getElementById('sand');
+const ctx  = sand.getContext('2d', { willReadFrequently:true });
+
+function resizeSand(){
+  sand.width = innerWidth; sand.height = innerHeight;
+
+  const g = ctx.createLinearGradient(0,0,0,sand.height);
+  g.addColorStop(0, '#e7d9b7');
+  g.addColorStop(1, '#c8b68f');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,sand.width,sand.height);
+
+  ctx.globalAlpha = 0.12;
+  for(let i=0;i<800;i++){
+    const x = Math.random()*sand.width;
+    const y = Math.random()*sand.height;
+    ctx.fillStyle = (i%3===0)?'#bfae82':'#d2c29a';
+    ctx.beginPath(); ctx.arc(x,y,Math.random()*1.2+0.2,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
 
-function startGameWithChar(src){
-  whoai.src=src;
-  whoaiWrap.style.display='block';
-  store.set('whoai.char',src);
-  closePanel(charPanel);
-  $('#hero').style.display='none';  // Hero隠す
-  $('#gameUi').classList.add('show');
-  scene('beach');                   // ビーチへ
+const BRUSH = 30;
+function brushAt(x,y){
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath(); ctx.arc(x,y,BRUSH,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  maybeSpawnNear(x,y);
 }
 
-/* ========== Heroボタン ========== */
-$('#btnHeroStart').onclick=()=>openCharPanel();
-$('#btnHeroContinue').onclick=()=>continueGame();
-$('#btnAbout').onclick=()=>location.href='about/';
-$('#btnLang').onclick=()=>toggleLang();
+sand.addEventListener('pointerdown', e=>{
+  if(currentScene!=='beach') return;
+  brushAt(e.clientX, e.clientY);
+},{passive:false});
+sand.addEventListener('pointermove', e=>{
+  if(currentScene!=='beach' || e.buttons===0) return;
+  brushAt(e.clientX, e.clientY);
+},{passive:false});
 
-function continueGame(){
-  const saved=store.get('whoai.char',null);
-  const last=store.get('whoai.lastScene','beach');
-  if(!saved){ openCharPanel(); return; }
-  whoai.src=saved; whoaiWrap.style.display='block';
-  $('#hero').style.display='none';
-  $('#gameUi').classList.add('show');
-  scene(last);
+/* ========== 貝の出現・ドラッグ・コレクション ========== */
+const COMMON = [
+  './public/items/asari1.png','./public/items/asari2.png','./public/items/asari3.png'
+];
+const RARE = [
+  './public/items/aurora_shell.png','./public/items/rare_pearl.png','./public/items/rare_rainbow.png'
+];
+
+const bucket  = document.getElementById('bucket');
+const counter = document.getElementById('counter');
+
+let count = 0;                      // 今日集めた数（表示用）
+let spawnedTotal = 0;               // 出現総数の上限管理
+const shells = [];
+const MAX_SHELLS = 8;               // 同時に出る上限
+const TOTAL_SPAWN_LIMIT = 20;       // 1セッションの合計上限
+const MIN_DIST   = 90;
+const SPAWN_P    = 0.18;
+
+function tooClose(x,y){ return shells.some(s=>Math.hypot(s.x-x,s.y-y)<MIN_DIST); }
+function avoidBucket(x,y){
+  const b=bucket.getBoundingClientRect();
+  const cx=(b.left+b.right)/2, cy=(b.top+b.bottom)/2;
+  return Math.hypot(cx-x,cy-y)<120;
 }
 
-/* ========== 共通パネル操作 ========== */
-function openPanel(p){ p.classList.add('show'); p.setAttribute('aria-hidden','false'); }
-function closePanel(p){ p.classList.remove('show'); p.setAttribute('aria-hidden','true'); }
+function maybeSpawnNear(x,y){
+  if(shells.length>=MAX_SHELLS) return;
+  if(spawnedTotal>=TOTAL_SPAWN_LIMIT) return;
+  if(Math.random()>SPAWN_P) return;
 
-/* ========== 初期化 ========== */
-function init(){
-  setLang(getLang());
-  scene('sunrise');
-  whoaiWrap.style.display='none';
-  $('#gameUi').classList.remove('show');
-  const hasSave=!!store.get('whoai.char',null);
-  const btnCont=$('#btnHeroContinue');
-  btnCont.disabled=!hasSave;
-  btnCont.style.opacity=hasSave?'1':'.5';
+  let px = x + (Math.random()*2-1)*90;
+  let py = y + (Math.random()*2-1)*90;
+  px = Math.max(60, Math.min(innerWidth -60, px));
+  py = Math.max(100, Math.min(innerHeight-100, py));
+  if(tooClose(px,py) || avoidBucket(px,py)) return;
+
+  const rare = Math.random()<0.18;
+  const pool = rare ? RARE : COMMON;
+  const src  = pool[Math.floor(Math.random()*pool.length)];
+
+  const el = document.createElement('div');
+  el.className = 'shell';
+  el.style.left = px + 'px';
+  el.style.top  = py + 'px';
+  el.style.backgroundImage = `url(${src})`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  enableShellDrag(el, src);
+  shells.push({el,x:px,y:py,src});
+  spawnedTotal++;
+  store.set('whoai.spawned', spawnedTotal);
 }
-init();
 
-/* ========== 多言語対応 ========== */
-const I18N = {
-  ja:{about:'研究について',langBtn:'EN',heroTitle:'朝日の海へようこそ',start:'スタート',cont:'続きから',
-      chooseChar:'キャラを選んでね',toastSunrise:'朝日がきれいだね',toNight:'夜へ',accessory:'アクセサリー',
-      collection:'コレクション',reset:'リセット',nightTitle:'また明日',
-      nightPH:'夜空を見ながら、何を話そう？',send:'送信',close:'閉じる',
-      colTitle:'コレクション',colCommon:'よくある貝',colRare:'レア',
-      beachGuide:'砂の中に貝があるよ。なでて探してね',nightGuide:'夜の海。話そうか？'},
-  en:{about:'About this research',langBtn:'中文',heroTitle:'Welcome to the Sunrise Shore',start:'Start',cont:'Continue',
-      chooseChar:'Choose your character',toastSunrise:'Beautiful sunrise',toNight:'To Night',accessory:'Accessories',
-      collection:'Collection',reset:'Reset',nightTitle:'See you tomorrow',
-      nightPH:'What shall we talk about under the night sky?',send:'Send',close:'Close',
-      colTitle:'Collection',colCommon:'Common Shells',colRare:'Rare',
-      beachGuide:'Shells hide in the sand. Swipe to find them.',nightGuide:"It's night by the sea. Shall we talk?"},
-  zh:{about:'关于研究',langBtn:'한국어',heroTitle:'欢迎来到朝阳海岸',start:'开始',cont:'继续',
-      chooseChar:'选择角色',toastSunrise:'美丽的朝阳',toNight:'进入夜晚',accessory:'饰品',
-      collection:'收藏',reset:'重置',nightTitle:'明天见',
-      nightPH:'在星空下我们聊些什么？',send:'发送',close:'关闭',
-      colTitle:'收藏',colCommon:'常见贝壳',colRare:'稀有',
-      beachGuide:'贝壳藏在沙子里，滑动寻找它们。',nightGuide:'夜晚的海边，我们聊聊吧？'},
-  ko:{about:'연구에 대하여',langBtn:'日本語',heroTitle:'아침 해변에 오신 것을 환영합니다',start:'시작',cont:'계속',
-      chooseChar:'캐릭터를 선택하세요',toastSunrise:'아름다운 아침 해',toNight:'밤으로',accessory:'액세서리',
-      collection:'컬렉션',reset:'리셋',nightTitle:'내일 또 봐요',
-      nightPH:'밤하늘을 보며 무엇을 이야기할까요?',send:'보내기',close:'닫기',
-      colTitle:'컬렉션',colCommon:'일반 조개',colRare:'레어',
-      beachGuide:'조개는 모래 속에 숨어있어요. 쓸어보세요.',nightGuide:'밤바다입니다. 이야기해볼까요?'}
+function enableShellDrag(el, src){
+  let pid=null, dx=0, dy=0;
+  el.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    pid = e.pointerId;
+    el.setPointerCapture(pid);
+    dx = e.clientX - parseFloat(el.style.left);
+    dy = e.clientY - parseFloat(el.style.top);
+    el.classList.add('drag');
+  }, {passive:false});
+
+  el.addEventListener('pointermove', e=>{
+    if(e.pointerId!==pid) return;
+    e.preventDefault();
+    el.style.left = (e.clientX - dx) + 'px';
+    el.style.top  = (e.clientY - dy) + 'px';
+  }, {passive:false});
+
+  function finish(e){
+    if(e.pointerId!==pid) return;
+    e.preventDefault();
+    el.classList.remove('drag');
+    el.releasePointerCapture(pid);
+    pid=null;
+
+    const b=bucket.getBoundingClientRect();
+    const s=el.getBoundingClientRect();
+    const hit = !(s.right<b.left || s.left>b.right || s.bottom<b.top || s.top>b.bottom);
+    if(hit){
+      el.remove();
+      const i=shells.findIndex(o=>o.el===el); if(i>-1) shells.splice(i,1);
+      counter.textContent = ++count;
+      persistCount();
+      const key = src.split('/').pop().replace('.png','');
+      updateCollection(key, 1);
+      showBubble(Math.random()<0.2 ? 'レアだよ！' : 'やったね！');
+      refreshCollectionView();
+      refreshAccessoryLocks();
+    }
+  }
+  el.addEventListener('pointerup', finish,   {passive:false});
+  el.addEventListener('pointercancel', finish,{passive:false});
+}
+
+/* ========== コレクションUI ========== */
+const collectionPanel = document.getElementById('collectionPanel');
+const colCommon = document.getElementById('colCommon');
+const colRare   = document.getElementById('colRare');
+const collectionSummary = document.getElementById('collectionSummary');
+document.getElementById('colClose').onclick = ()=>closePanel(collectionPanel);
+
+const ALL_ITEMS=[...COMMON,...RARE].map(src=>({key:src.split('/').pop().replace('.png',''),src}));
+
+function getCollection(){return store.get('whoai.collection',{});}
+function setCollection(o){store.set('whoai.collection',o);}
+function updateCollection(key,d){
+  const c=getCollection(); c[key]=(c[key]||0)+(d||0); if(c[key]<0)c[key]=0; setCollection(c);
+}
+function totalCollected(){return Object.values(getCollection()).reduce((a,b)=>a+b,0);}
+function rareCount(){
+  const c=getCollection();
+  return RARE.reduce((sum,src)=>sum+(c[src.split('/').pop().replace('.png','')]||0),0);
+}
+
+function buildCollectionGrid(){
+  const makeSlot=(src)=>{
+    const key=src.split('/').pop().replace('.png','');
+    const slot=document.createElement('div');
+    slot.className='slot';
+    slot.innerHTML=`
+      <div class="thumb" style="background-image:url(${src});width:80px;height:80px;background-size:contain;background-repeat:no-repeat;background-position:center;margin:auto"></div>
+      <div class="name" style="text-align:center">${key}</div>
+      <div class="count" style="text-align:center">×<span data-key="${key}">0</span></div>`;
+    return slot;
+  };
+  colCommon.innerHTML=''; COMMON.forEach(src=>colCommon.appendChild(makeSlot(src)));
+  colRare.innerHTML='';   RARE.forEach(src=>colRare.appendChild(makeSlot(src)));
+  colCommon.dataset.ready='1'; colRare.dataset.ready='1';
+}
+
+function refreshCollectionView(){
+  const col=getCollection();
+  const totalKinds=ALL_ITEMS.length;
+  const ownedKinds=ALL_ITEMS.filter(x=>(col[x.key]||0)>0).length;
+  const total=totalCollected();
+  collectionSummary.textContent=`入手種: ${ownedKinds}/${totalKinds}　総数: ${total}　コンプ率: ${Math.round(ownedKinds/totalKinds*100)}%`;
+  [...document.querySelectorAll('#collectionPanel .count span')].forEach(span=>{
+    const key=span.getAttribute('data-key');
+    span.textContent = col[key]||0;
+  });
+}
+
+function openCollection(){
+  if(!colCommon.dataset.ready) buildCollectionGrid();
+  refreshCollectionView();
+  openPanel(collectionPanel);
+}
+
+/* ========== アクセサリー（装着＆解放条件） ========== */
+const accLayer = document.getElementById('accLayer');
+const accessoryPanel = document.getElementById('accessoryPanel');
+const accList = document.getElementById('accList');
+document.getElementById('accClose').onclick = ()=>closePanel(accessoryPanel);
+
+const ACCESSORIES = [
+  // unlockAt は「総取得数」がこの数以上で解放
+  {key:'straw_hat',    name:'麦わら帽子',   src:'./public/accessories/straw_hat.png',    cls:'straw_hat',    unlockAt: 3},
+  {key:'knit_hat',     name:'毛糸の帽子',   src:'./public/accessories/knit_hat.png',     cls:'knit_hat',     unlockAt: 6},
+  {key:'sunglasses',   name:'サングラス',   src:'./public/accessories/sunglasses.png',   cls:'sunglasses',   unlockAt:10},
+  {key:'ribbon_yellow',name:'黄色いリボン', src:'./public/accessories/ribbon_yellow.png',cls:'ribbon_yellow',unlockAt:15},
+  {key:'star_yellow',  name:'黄色のスター', src:'./public/accessories/star_yellow.png',  cls:'star_yellow',  unlockAt:20},
+];
+
+function getActiveAcc(){ return new Set(store.get('whoai.accessories',[])); }
+function setActiveAcc(set){ store.set('whoai.accessories',Array.from(set)); }
+
+function addAccImg(a){
+  removeAccImg(a.key);
+  const img=document.createElement('img');
+  img.src=a.src; img.alt=a.name;
+  img.className='acc '+(a.cls||''); img.dataset.key=a.key;
+  accLayer.appendChild(img);
+}
+function removeAccImg(key){
+  const el=accLayer.querySelector(`.acc[data-key="${key}"]`);
+  if(el) el.remove();
+}
+function restoreAccessories(){
+  const active = getActiveAcc();
+  ACCESSORIES.forEach(a=>{ if(active.has(a.key)) addAccImg(a); });
+}
+
+function openAccessory(){
+  const total = totalCollected();
+  if(!accList.dataset.ready){
+    ACCESSORIES.forEach(a=>{
+      const item=document.createElement('div'); item.className='accChoice'; item.dataset.key=a.key;
+      item.innerHTML=`
+        <img src="${a.src}" alt="${a.name}" style="width:80px;height:auto;display:block;margin:0 auto 6px">
+        <div class="t" style="text-align:center">
+          <div style="font-weight:700">${a.name}</div>
+          <div class="hint" style="font-size:12px;color:#666">タップで装着/解除</div>
+        </div>
+        <input type="checkbox" aria-label="${a.name}" style="display:block;margin:8px auto 0">`;
+      const cb=item.querySelector('input');
+      cb.addEventListener('change',()=>toggleAccessory(a,cb.checked));
+      item.addEventListener('click',e=>{
+        if(e.target.tagName!=='INPUT'){ cb.checked=!cb.checked; cb.dispatchEvent(new Event('change')); }
+      });
+      accList.appendChild(item);
+    });
+    accList.dataset.ready='1';
+  }
+  // 既存状態反映＆ロック表示
+  const active = getActiveAcc();
+  [...accList.querySelectorAll('.accChoice')].forEach(div=>{
+    const key=div.dataset.key;
+    const a = ACCESSORIES.find(x=>x.key===key);
+    const locked = total < a.unlockAt;
+    const cb = div.querySelector('input');
+    const hint = div.querySelector('.hint');
+
+    div.style.opacity = locked ? .5 : 1;
+    cb.disabled = locked;
+    hint.textContent = locked ? `あと ${a.unlockAt-total} 個で解放` : 'タップで装着/解除';
+    cb.checked = active.has(key);
+  });
+  openPanel(accessoryPanel);
+}
+function toggleAccessory(a,on){
+  const total = totalCollected();
+  if(total < a.unlockAt){
+    showBubble(`あと ${a.unlockAt-total} 個で解放`);
+    return;
+  }
+  const set = getActiveAcc();
+  if(on){ set.add(a.key); addAccImg(a); } else { set.delete(a.key); removeAccImg(a.key); }
+  setActiveAcc(set);
+}
+function refreshAccessoryLocks(){
+  if(!accList.dataset.ready) return;
+  const total = totalCollected();
+  [...accList.querySelectorAll('.accChoice')].forEach(div=>{
+    const key=div.dataset.key;
+    const a = ACCESSORIES.find(x=>x.key===key);
+    const locked = total < a.unlockAt;
+    const cb = div.querySelector('input');
+    const hint = div.querySelector('.hint');
+    div.style.opacity = locked ? .5 : 1;
+    cb.disabled = locked;
+    hint.textContent = locked ? `あと ${a.unlockAt-total} 個で解放` : 'タップで装着/解除';
+  });
+}
+
+/* ========== 夜会話 ========== */
+const nightPanel = document.getElementById('nightPanel');
+const chatLog    = document.getElementById('chatLog');
+const chatInput  = document.getElementById('chatInput');
+const chatSend   = document.getElementById('chatSend');
+document.getElementById('nightClose').onclick=()=>closePanel(nightPanel);
+
+function addMsg(role,text){
+  const div=document.createElement('div');
+  div.className='msg '+(role==='user'?'me':'ai');
+  div.textContent=text;
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+function openNight(){
+  openPanel(nightPanel);
+  if(!chatLog.dataset.greet){
+    addMsg('ai', I18N[getLang()].nightGuide);
+    chatLog.dataset.greet='1';
+  }
+}
+chatSend.onclick = async ()=>{
+  const text = chatInput.value.trim(); if(!text) return;
+  addMsg('user', text); chatInput.value='';
+  try{
+    if (window.WHOAI_TALK && WHOAI_TALK.talk) {
+      const { reply } = await WHOAI_TALK.talk(text, { state:{ totalCollected:count } });
+      addMsg('ai', reply || '…');
+    } else {
+      addMsg('ai', `（ローカル）${text}。夜風が気持ちいいね。`);
+    }
+  }catch(e){
+    addMsg('ai','（接続できませんでした）'); console.error(e);
+  }
 };
 
-const $=(s,p=document)=>p.querySelector(s);
-const $$=(s,p=document)=>Array.from(p.querySelectorAll(s));
-const toast=$('#toast');
-const say=s=>toast.textContent=s;
-const getLang=()=>localStorage.getItem('whoai.lang')||'ja';
-const LANG_ORDER=['ja','en','zh','ko'];
-const LANG_LABEL={ja:'日本語',en:'EN',zh:'中文',ko:'한국어'};
+/* ========== フッターUIのイベント ========== */
+document.getElementById('btnNight').onclick=()=>{ scene('night'); openNight(); };
+document.getElementById('btnAccessory').onclick=()=>{ if(getComputedStyle(whoaiWrap).display==='none'){ return; } openAccessory(); };
+document.getElementById('btnCollection').onclick=()=> openCollection();
+document.getElementById('btnReset').onclick=()=>{
+  count=0; counter.textContent=0; store.set('whoai.count',0);
+  [...document.querySelectorAll('.shell')].forEach(e=>e.remove());
+  spawnedTotal=0; store.set('whoai.spawned',0);
+  if(currentScene==='beach'){ resizeSand(); }
+  say('リセットしたよ');
+};
 
-function setLang(lang){
-  const L=I18N[lang]||I18N.ja;
-  document.documentElement.setAttribute('lang',lang);
-  localStorage.setItem('whoai.lang',lang);
+/* ========== 保存・復元 & 初期値 ========== */
+function persistCount(){ store.set('whoai.count',count); }
 
-  $('#btnAbout').textContent=L.about;
-  $('#heroTitle').textContent=L.heroTitle;
-  $('#btnHeroStart').textContent=L.start;
-  $('#btnHeroContinue').textContent=L.cont;
-  $('#btnNight').textContent=L.toNight;
-  $('#btnAccessory').textContent=L.accessory;
-  $('#btnCollection').textContent=L.collection;
-  $('#btnReset').textContent=L.reset;
-  $('#charTitle').textContent=L.chooseChar;
-  $('#nightTitle').textContent=L.nightTitle;
-  $('#chatInput').placeholder=L.nightPH;
-  $('#chatSend').textContent=L.send;
-  $('#accTitle').textContent=L.accessory;
-  $('#colTitle').textContent=L.colTitle;
-  $('#colCommonTitle').textContent=L.colCommon;
-  $('#colRareTitle').textContent=L.colRare;
+(function loadSaved(){
+  // カウント復元（表示は hero では隠れてるが数値は保持）
+  count = store.get('whoai.count',0)||0;
+  counter.textContent = count;
+  spawnedTotal = store.get('whoai.spawned',0)||0;
+})();
 
-  // 次に切り替わる言語を表示
-  const idx=LANG_ORDER.indexOf(lang);
-  const next=LANG_ORDER[(idx+1)%LANG_ORDER.length];
-  $('#btnLang').textContent=LANG_LABEL[next];
-  $('#btnLang').title=`言語を${LANG_LABEL[next]}に切り替え`;
+/* ========== アクセサリー復元をゲーム開始/継続時に差し込む ========== */
+(function hookStarts(){
+  if(typeof startGameWithChar==='function'){
+    const _start = startGameWithChar;
+    startGameWithChar = function(src){ _start(src); restoreAccessories(); };
+  }
+  if(typeof continueGame==='function'){
+    const _cont = continueGame;
+    continueGame = function(){ _cont(); restoreAccessories(); };
+  }
+})();
 
-  say(L.toastSunrise);
+/* ========== ビーチに入ったら砂＆バケツを表示 ========== */
+(function hookScene(){
+  const _scene = scene;
+  scene = function(name){
+    _scene(name);
+    if(name==='beach'){
+      sand.classList.add('show'); bucket.classList.add('show'); resizeSand();
+      say(I18N[getLang()].beachGuide);
+    }else{
+      sand.classList.remove('show'); bucket.classList.remove('show');
+      if(name==='night') say(I18N[getLang()].nightGuide);
+    }
+  };
+})();
+
+/* ========== ふわっと徘徊 ========== */
+(function wander(){
+  setInterval(()=>{
+    whoaiWrap.style.left   = (8 + Math.random()*72) + 'vw';
+    whoaiWrap.style.bottom = (10 + Math.random()*60) + 'vh';
+  }, 5000);
+})();
+
+/* ========== 便利：小さな吹き出し ========== */
+const bubble = document.getElementById('bubble');
+function showBubble(text){
+  bubble.textContent = text;
+  bubble.classList.add('show');
+  setTimeout(()=>bubble.classList.remove('show'), 1200);
 }
-function toggleLang(){
-  const cur=getLang();
-  const idx=LANG_ORDER.indexOf(cur);
-  const next=LANG_ORDER[(idx+1)%LANG_ORDER.length];
-  setLang(next);
-}
 
-/* ========== 以下：ゲームロジック ========== */
-// …（キャラ選択・砂・貝・アクセサリー・コレクション・夜会話などのJSをここに続けます）…
+/* ========== 画面サイズ変化 ========== */
+addEventListener('resize', ()=>{ if(currentScene==='beach') resizeSand(); });
 
+ 
 </script>
 </body>
 </html>
